@@ -257,6 +257,7 @@ otError otPlatRadioTransmit(otInstance *aInstance, otRadioFrame *aPacket)
     _set_power(aPacket->mPower);
 
     /* send packet though netdev */
+    DEBUG("Billy: Sending packet\n");
     _dev->driver->send(_dev, &pkt, 1);
 
     return OT_ERROR_NONE;

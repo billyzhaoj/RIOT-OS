@@ -160,6 +160,26 @@ static void _event_cb(netdev_t *dev, netdev_event_t event) {
     }
 }
 
+
+//Billy's packet send fn
+static void send(void) {
+
+    //otError error = OT_ERROR_NONE;
+    
+    otRadioFrame *sTxPacket = otPlatRadioGetTransmitBuffer(sInstance); 
+    int IEEE802154_ACK_LENGTH = 9; 
+    sTxPacket->mLength =IEEE802154_ACK_LENGTH ;
+    sTxPacket->mChannel = 24;
+    sTxPacket->mPower = OT_RADIO_RSSI_INVALID;
+    uint8_t psdu[IEEE802154_ACK_LENGTH];
+    sTxPacket->mPsdu = psdu;
+    sTxPacket->mPsdu[0] = 2; 
+    sTxPacket->mPsdu[1] = 0;
+    sTxPacket->mPsdu[2] = 2;
+   otPlatRadioTransmit(sInstance, sTxPacket);
+}
+
+
 static void *_openthread_main_thread(void *arg) {
     main_pid = thread_getpid();
 
@@ -212,6 +232,11 @@ static void *_openthread_main_thread(void *arg) {
             DEBUG("****** ot_main sleep ******\n");
             msg_receive(&msg);
             DEBUG("\n****** ot_main wakeup ******\n");
+
+            DEBUG("Billy: Sending packet");
+            send();
+
+
             switch (msg.type) {
                 case OPENTHREAD_NETDEV_MSG_TYPE_EVENT:
                     /* Received an event from driver */
