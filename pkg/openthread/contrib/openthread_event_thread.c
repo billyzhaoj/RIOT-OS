@@ -139,6 +139,10 @@ static void *_openthread_event_thread(void *arg) {
                 irq_restore(state);
 #endif
                 break;
+            case OPENTHREAD_LINK_RETRY_TIMEOUT:
+                DEBUG("\not_event: OPENTHREAD_LINK_RETRY_TIMEOUT\n");
+                sent_pkt(openthread_get_instance(), NETDEV_EVENT_TX_NOACK);
+                break;
             case OPENTHREAD_NETDEV_MSG_TYPE_RADIO_BUSY:
                 /* Radio is busy */
                 DEBUG("\not_event: OPENTHREAD_NETDEV_MSG_TYPE_RADIO_BUSY received\n");

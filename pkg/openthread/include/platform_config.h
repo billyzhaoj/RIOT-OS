@@ -43,6 +43,8 @@ extern "C" {
 
 #define OPENTHREAD_CONFIG_MAX_TX_ATTEMPTS_DIRECT    10
 
+#define OPENTHREAD_CONFIG_LINK_RETRY_DELAY   (40000ul)
+
 #ifdef __cplusplus
 }
 #endif
