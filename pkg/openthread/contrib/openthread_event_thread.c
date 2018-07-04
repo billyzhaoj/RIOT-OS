@@ -133,6 +133,11 @@ static void *_openthread_event_thread(void *arg) {
                 DEBUG("\not_event: OPENTHREAD_NETDEV_MSG_TYPE_EVENT received\n");
                 /* Wait until the task thread finishes accessing the shared resoure (radio) */
                 openthread_get_netdev()->driver->isr(openthread_get_netdev());
+#ifdef MODULE_OPENTHREAD_FTD
+                unsigned state = irq_disable();
+                ((at86rf2xx_t *)openthread_get_netdev())->pending_irq--;
+                irq_restore(state);
+#endif
                 break;
             case OPENTHREAD_NETDEV_MSG_TYPE_RADIO_BUSY:
                 /* Radio is busy */
