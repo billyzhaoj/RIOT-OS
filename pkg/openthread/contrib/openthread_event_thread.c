@@ -171,7 +171,7 @@ static void *_openthread_event_thread(void *arg) {
                 serialBuffer->serial_buffer_status = OPENTHREAD_SERIAL_BUFFER_STATUS_FREE;
                 break;
             case OPENTHREAD_JOB_MSG_TYPE_EVENT:
-                DEBUG("\not_event: OPENTHREAD_JOB_MSG_TYPE_EVENT receimake deved\n");
+                DEBUG("\not_event: OPENTHREAD_JOB_MSG_TYPE_EVENT received\n");
                 job = msg.content.ptr;
                 reply.content.value = ot_exec_command(sInstance, job->command, job->arg, job->answer);
                 msg_reply(&msg, &reply);
