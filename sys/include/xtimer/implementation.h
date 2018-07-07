@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2015 Kaspar Schleiser <kaspar@schleiser.de>
- * Copyright (C) 2016 Eistec AB
+ *               2016 Eistec AB
+ *               2018 Josua Arndt
  *
  * This file is subject to the terms and conditions of the GNU Lesser
  * General Public License v2.1. See the file LICENSE in the top level
@@ -13,8 +14,11 @@
  * @{
  * @file
  * @brief   xtimer implementation
+ *
  * @author  Kaspar Schleiser <kaspar@schleiser.de>
  * @author  Joakim Nohlgård <joakim.nohlgard@eistec.se>
+ * @author  Josua Arndt <jarndt@ias.rwth-aachen.de>
+ *
  */
 #ifndef XTIMER_IMPLEMENTATION_H
 #define XTIMER_IMPLEMENTATION_H
@@ -32,13 +36,8 @@ extern "C" {
 #if XTIMER_MASK
 extern volatile uint32_t _xtimer_high_cnt;
 #endif
-
-#if (XTIMER_HZ < 1000000ul) && (STIMER_HZ >= 1000000ul)
-extern volatile uint32_t prev_s;
-extern volatile uint32_t prev_x;
-extern volatile bool     xtimer_sync;
-#endif
-
+extern volatile uint32_t _long_cnt;
+extern volatile uint64_t _xtimer_current_time;
 
 /**
  * @brief IPC message type for xtimer msg callback
@@ -52,16 +51,6 @@ static inline uint32_t _xtimer_lltimer_now(void)
 {
     return timer_read(XTIMER_DEV);
 }
-
-#if (XTIMER_HZ < 1000000ul) && (STIMER_HZ >= 1000000ul)
-/**
- * @brief returns the (masked) low-level timer counter value for STIMER
- */
-static inline uint32_t _stimer_lltimer_now(void)
-{
-    return timer_read(STIMER_DEV);
-}
-#endif
 
 /**
  * @brief drop bits of a value that don't fit into the low-level timer.
@@ -79,7 +68,7 @@ static inline uint32_t _xtimer_lltimer_mask(uint32_t val)
  * @internal
  */
 uint64_t _xtimer_now64(void);
-int _xtimer_set_absolute(xtimer_t *timer, uint32_t target, uint32_t now);
+int _xtimer_set_absolute(xtimer_t *timer, uint32_t target);
 void _xtimer_set(xtimer_t *timer, uint32_t offset);
 void _xtimer_set64(xtimer_t *timer, uint32_t offset, uint32_t long_offset);
 void _xtimer_periodic_wakeup(uint32_t *last_wakeup, uint32_t period);
@@ -108,41 +97,24 @@ void _xtimer_tsleep(uint32_t offset, uint32_t long_offset);
 
 static inline uint32_t _xtimer_now(void)
 {
+    uint32_t now, elapsed;
+
+    /* time sensitive since _long_cnt and _xtimer_high_cnt are updated here */
+    uint8_t state = irq_disable();
+    now = _xtimer_lltimer_now();
 #if XTIMER_MASK
-    uint32_t latched_high_cnt, now;
-
-    /* _high_cnt can change at any time, so check the value before
-     * and after reading the low-level timer. If it hasn't changed,
-     * then it can be safely applied to the timer count. */
-
-    do {
-        latched_high_cnt = _xtimer_high_cnt;
-        now = _xtimer_lltimer_now();
-    } while (_xtimer_high_cnt != latched_high_cnt);
-
-    return latched_high_cnt | now;
+    elapsed = now - _xtimer_lltimer_mask((uint32_t)_xtimer_current_time);
+    _xtimer_current_time += (uint64_t)elapsed;
+    _xtimer_high_cnt = ((uint32_t)_xtimer_current_time) & XTIMER_MASK;
+    _long_cnt = (uint32_t)(_xtimer_current_time >> 32);
 #else
-#if (XTIMER_HZ < 1000000ul) && (STIMER_HZ >= 1000000ul)
-    if (!xtimer_sync) {
-        prev_x = _xtimer_lltimer_now();
-        prev_s = _stimer_lltimer_now();
-        xtimer_sync = true;
-        return prev_x;
-    } else {
-        uint64_t diff_s;
-        uint32_t now_s;
-    
-        do {
-            now_s  = _stimer_lltimer_now();
-            diff_s = now_s - prev_s;
-        } while (diff_s < STIMER_HZ/XTIMER_HZ); 
+    elapsed = now - ((uint32_t)_xtimer_current_time & 0xFFFFFFFF);
+    _xtimer_current_time += (uint64_t)elapsed;
+    _long_cnt = (uint32_t)(_xtimer_current_time >> 32);
+#endif  
+    irq_restore(state);
 
-        return _xtimer_lltimer_mask(prev_x + (uint32_t)(diff_s*XTIMER_HZ/STIMER_HZ));
-    }
-#else
-    return _xtimer_lltimer_now();
-#endif
-#endif
+    return (uint32_t)_xtimer_current_time;
 }
 
 static inline xtimer_ticks32_t xtimer_now(void)
@@ -176,11 +148,6 @@ static inline void _xtimer_spin(uint32_t offset) {
     while (_xtimer_lltimer_mask(_xtimer_lltimer_now() - start) < offset);
 #else
     while ((_xtimer_lltimer_now() - start) < offset);
-#endif
-#if (XTIMER_HZ < 1000000ul) && (STIMER_HZ >= 1000000ul)
-    prev_x = _xtimer_lltimer_now();
-    prev_s = _stimer_lltimer_now();
-    xtimer_sync = true;
 #endif
 }
 
@@ -256,6 +223,12 @@ static inline void xtimer_set_wakeup64(xtimer_t *timer, uint64_t offset, kernel_
 static inline void xtimer_set(xtimer_t *timer, uint32_t offset)
 {
     _xtimer_set(timer, _xtimer_ticks_from_usec(offset));
+}
+
+static inline void xtimer_set64(xtimer_t *timer, uint64_t period_us)
+{
+    uint64_t ticks = _xtimer_ticks_from_usec64(period_us);
+    _xtimer_set64(timer, ticks, ticks >> 32);
 }
 
 static inline int xtimer_msg_receive_timeout(msg_t *msg, uint32_t timeout)
