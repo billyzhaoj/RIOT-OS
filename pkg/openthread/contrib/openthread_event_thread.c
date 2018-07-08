@@ -32,6 +32,7 @@
 #ifdef MODULE_OPENTHREAD_NCP_FTD
 #include "openthread/ncp.h"
 #include "openthread/commissioner.h"
+extern void wdt_clear(void);
 #endif
 
 #ifdef MODULE_AT86RF2XX
@@ -165,6 +166,9 @@ static void *_openthread_event_thread(void *arg) {
             case OPENTHREAD_SERIAL_MSG_TYPE_EVENT:
                 /* Tell OpenThread about the reception of a CLI command */
                 DEBUG("\not_event: OPENTHREAD_SERIAL_MSG_TYPE received\n");
+#ifdef MODULE_OPENTHREAD_NCP_FTD
+                wdt_clear();
+#endif
                 serialBuffer = (serial_msg_t*)msg.content.ptr;
                 DEBUG("%s", serialBuffer->buf);
                 otPlatUartReceived((uint8_t*) serialBuffer->buf,serialBuffer->length);
