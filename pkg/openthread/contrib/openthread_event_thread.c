@@ -48,6 +48,9 @@ static kernel_pid_t _event_pid;
 
 static otInstance *sInstance;
 
+static uint32_t now = 0;
+static uint32_t prev = 0;
+
 /* get OpenThread instance */
 otInstance* openthread_get_instance(void) {
     return sInstance;
@@ -168,6 +171,9 @@ static void *_openthread_event_thread(void *arg) {
                 DEBUG("\not_event: OPENTHREAD_SERIAL_MSG_TYPE received\n");
 #ifdef MODULE_OPENTHREAD_NCP_FTD
                 wdt_clear();
+                now = xtimer_now_usec64();
+                printf("wdt period: %lu/%lu\n", now - prev, now);
+                prev = now;
 #endif
                 serialBuffer = (serial_msg_t*)msg.content.ptr;
                 DEBUG("%s", serialBuffer->buf);
