@@ -31,8 +31,8 @@
 #define ENABLE_DEBUG (0)
 #include "debug.h"
 
-static uint32_t prev = 0;
-static uint32_t long_cnt = 0;
+//static uint32_t prev = 0;
+//static uint32_t long_cnt = 0;
 
 /**
  * Set the alarm to fire at @p aDt milliseconds after @p aT0.
@@ -59,14 +59,14 @@ void otPlatAlarmMilliStop(otInstance *aInstance)
 /* OpenThread will call this for getting running time in millisecs */
 uint32_t otPlatAlarmMilliGetNow(void)
 {
-    uint32_t now = xtimer_now_usec() / US_PER_MS;
+    uint32_t now = (uint32_t)(xtimer_now_usec64() / US_PER_MS);
     /* With the same unit32_t type, microsec timer overflows faster than millisec timer. 
      * This mismatch should be handled here */
-    if (prev > now) {
+    /*if (prev > now) {
         long_cnt++;
     }
     prev = now;
-    now += long_cnt * (0xFFFFFFFF / US_PER_MS);
+    now += long_cnt * (0xFFFFFFFF / US_PER_MS);*/
     DEBUG("otPlatAlarmMilliGetNow: %" PRIu32 "\n", now);
     return now;
 }
