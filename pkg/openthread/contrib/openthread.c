@@ -156,6 +156,7 @@ static void _event_cb(netdev_t *dev, netdev_event_t event) {
             {
                 radio_rx_msg.type = OPENTHREAD_NETDEV_MSG_TYPE_EVENT;
                 radio_rx_msg.content.ptr = dev;
+                radio_rx_msg.content.value = 1;
 #ifdef MODULE_OPENTHREAD_FTD
                 unsigned irq_state = irq_disable();
                 ((at86rf2xx_t *)dev)->pending_irq++;
@@ -175,18 +176,9 @@ static void _event_cb(netdev_t *dev, netdev_event_t event) {
             {
                 radio_tx_msg.type = OPENTHREAD_NETDEV_MSG_TYPE_EVENT;
                 radio_tx_msg.content.ptr = dev;
-#ifdef MODULE_OPENTHREAD_FTD
-                unsigned irq_state = irq_disable();
-                ((at86rf2xx_t *)dev)->pending_irq++;
-                irq_restore(irq_state);
-#endif
+                radio_tx_msg.content.value = 0;
                 if (msg_send(&radio_tx_msg, openthread_get_preevent_pid()) <= 0) {
                     printf("ot_task: possibly lost radio interrupt.\n");
-#ifdef MODULE_OPENTHREAD_FTD
-                    unsigned irq_state = irq_disable();
-                    ((at86rf2xx_t *)dev)->pending_irq--;
-                    irq_restore(irq_state);
-#endif
                 }
                 break;
             }
