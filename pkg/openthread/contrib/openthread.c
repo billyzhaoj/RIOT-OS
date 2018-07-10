@@ -48,13 +48,6 @@ static at86rf2xx_t at86rf2xx_dev;
 static msg_t radio_rx_msg;
 static msg_t radio_tx_msg;
 
-static mutex_t buffer_mutex = MUTEX_INIT;
-static mutex_t tasklet_mutex = MUTEX_INIT;
-static bool ind_buffer_mutex = false;
-static bool ind_tasklet_mutex = false;
-uint8_t pid_buffer_mutex = 0xff;
-uint8_t pid_tasklet_mutex = 0xff;
-
 static char ot_event_thread_stack[THREAD_STACKSIZE_MAIN*2];
 static char ot_preevent_thread_stack[THREAD_STACKSIZE_MAIN];
 
@@ -68,21 +61,10 @@ void print_active_pid(void) {
 
 /* lock Openthread buffer mutex */
 void openthread_lock_buffer_mutex(void) {
-    if (ind_buffer_mutex && sched_active_pid == pid_buffer_mutex) {
-        while (1) {
-            printf("********* Buffer MuTex Error ******\n");
-        }
-    } else {
-        mutex_lock(&buffer_mutex);
-        pid_buffer_mutex = sched_active_pid;
-        ind_buffer_mutex = true;
-    }
 }
 
 /* unlock Openthread buffer mutex */
 void openthread_unlock_buffer_mutex(void) {
-    ind_buffer_mutex = false;
-    mutex_unlock(&buffer_mutex);
 }
 
 /* lock Openthread buffer mutex */
@@ -95,21 +77,10 @@ void openthread_unlock_uart_buffer_mutex(void) {
 
 /* lock Openthread tasklet mutex */
 void openthread_lock_tasklet_mutex(void) {
-    if (ind_tasklet_mutex && sched_active_pid == pid_tasklet_mutex) {
-        while (1) {
-            printf("******* Task MuTex Error ********\n");
-        }
-    } else {
-        mutex_lock(&tasklet_mutex);
-        pid_tasklet_mutex = sched_active_pid;
-        ind_tasklet_mutex = true;
-    }
 }
 
 /* unlock Openthread tasklet mutex */
 void openthread_unlock_tasklet_mutex(void) {
-    ind_tasklet_mutex = false;
-    mutex_unlock(&tasklet_mutex);
 }
 
 /* get OpenThread netdev */
