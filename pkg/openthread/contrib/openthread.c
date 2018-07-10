@@ -36,6 +36,10 @@
 
 static msg_t millitimer_msg;
 static xtimer_t ot_millitimer;
+#ifdef OPENTHREAD_CONFIG_LINK_RETRY_DELAY
+static msg_t linkretry_timer_msg;
+static xtimer_t ot_linkretry_timer;
+#endif
 #ifdef MODULE_OPENTHREAD_FTD
 static msg_t microtimer_msg;
 static xtimer_t ot_microtimer;
@@ -92,6 +96,23 @@ netdev_t* openthread_get_netdev(void) {
 xtimer_t* openthread_get_millitimer(void) {
     return &ot_millitimer;
 }
+
+#ifdef OPENTHREAD_CONFIG_LINK_RETRY_DELAY
+/* get OpenThread timer */
+xtimer_t* openthread_get_linkretry_timer(void) {
+    return &ot_linkretry_timer;
+}
+
+/* Interupt handler for OpenThread linkretry-timer event */
+static void _linkretry_timer_cb(void* arg) {
+    linkretry_timer_msg.type = OPENTHREAD_LINK_RETRY_TIMEOUT;
+	if (msg_send(&linkretry_timer_msg, openthread_get_preevent_pid()) <= 0) {
+        while (1) {
+            printf("ot_preevent: possibly lost timer interrupt.\n");
+        }
+    }
+}
+#endif
 
 /* Interupt handler for OpenThread milli-timer event */
 static void _millitimer_cb(void* arg) {
@@ -192,6 +213,9 @@ void openthread_bootstrap(void)
     ot_millitimer.callback = _millitimer_cb;
 #ifdef MODULE_OPENTHREAD_FTD
     ot_microtimer.callback = _microtimer_cb;
+#endif
+#ifdef OPENTHREAD_CONFIG_LINK_RETRY_DELAY
+    ot_linkretry_timer.callback = _linkretry_timer_cb;
 #endif
 
     /* setup netdev modules */

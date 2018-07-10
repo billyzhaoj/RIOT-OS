@@ -72,20 +72,25 @@ static void *_openthread_preevent_thread(void *arg) {
             case OPENTHREAD_MICROTIMER_MSG_TYPE_EVENT:
                 /* Tell OpenThread a microsec time event was received (CSMA timer)
                  * only expired timers. */
-                DEBUG("\not_task: OPENTHREAD_MICROTIMER_MSG_TYPE_EVENT received\n");
+                DEBUG("\not_preevent: OPENTHREAD_MICROTIMER_MSG_TYPE_EVENT received\n");
                 msg.type = OPENTHREAD_MICROTIMER_MSG_TYPE_EVENT;
                 msg_send(&msg, openthread_get_event_pid());
                 break;
 #endif
+            case OPENTHREAD_LINK_RETRY_TIMEOUT:
+                DEBUG("\not_preevent: OPENTHREAD_LINK_RETRY_TIMEOUT\n");
+                msg.type = OPENTHREAD_LINK_RETRY_TIMEOUT;
+                msg_send(&msg, openthread_get_event_pid());
+                break;
             case OPENTHREAD_NETDEV_MSG_TYPE_EVENT:
                 /* Received an event from radio driver */
-                DEBUG("\not_event: OPENTHREAD_NETDEV_MSG_TYPE_EVENT received\n");
+                DEBUG("\not_preevent: OPENTHREAD_NETDEV_MSG_TYPE_EVENT received\n");
                 msg.type = OPENTHREAD_NETDEV_MSG_TYPE_EVENT;
                 msg_send(&msg, openthread_get_event_pid());
                 break;
             case OPENTHREAD_NETDEV_MSG_TYPE_RADIO_BUSY:
                 /* Received an event from radio driver */
-                DEBUG("\not_event: OPENTHREAD_NETDEV_MSG_TYPE_EVENT received\n");
+                DEBUG("\not_preevent: OPENTHREAD_NETDEV_MSG_TYPE_EVENT received\n");
                 msg.type = OPENTHREAD_NETDEV_MSG_TYPE_RADIO_BUSY;
                 msg_send(&msg, openthread_get_event_pid());
                 break;

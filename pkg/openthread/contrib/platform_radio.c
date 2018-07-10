@@ -44,8 +44,6 @@
 
 #ifdef OPENTHREAD_CONFIG_LINK_RETRY_DELAY
 static bool retry_delay_timer_ongoing = false;
-static xtimer_t link_retry_timer;
-static msg_t link_retry_msg;
 #endif
 
 static otRadioFrame sTransmitFrame;
@@ -487,11 +485,8 @@ void sent_pkt(otInstance *aInstance, netdev_event_t event)
 #ifdef OPENTHREAD_CONFIG_LINK_RETRY_DELAY
             if (!retry_delay_timer_ongoing) {
                 retry_delay_timer_ongoing = true;
-                link_retry_msg.type = OPENTHREAD_LINK_RETRY_TIMEOUT;
-                link_retry_msg.content.value = 0;
                 uint32_t link_delay = random_uint32_range(0, OPENTHREAD_CONFIG_LINK_RETRY_DELAY);
-                xtimer_set_msg(&link_retry_timer, link_delay, &link_retry_msg, 
-                               openthread_get_event_pid());
+                xtimer_set(openthread_get_linkretry_timer(), link_delay);
                 break;
             }
             retry_delay_timer_ongoing = false;

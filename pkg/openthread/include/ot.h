@@ -189,6 +189,15 @@ xtimer_t* openthread_get_millitimer(void);
 xtimer_t* openthread_get_microtimer(void);
 #endif
 
+#ifdef OPENTHREAD_CONFIG_LINK_RETRY_DELAY
+/**
+ * @brief   get linkretry timer of OpenThread.
+ *
+ * @return  linkretry timer of OpenThread
+ */
+xtimer_t* openthread_get_linkretry_timer(void);
+#endif
+
 /**
  * @brief   get netdev of OpenThread.
  *
