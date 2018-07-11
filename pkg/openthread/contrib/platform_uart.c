@@ -56,48 +56,60 @@ int8_t getFirstEmptySerialBuffer(void) {
 
 /* UART interrupt handler (required for OpenThread's NCP)*/
 static void uart_handler(void* arg, char c)  {
-    if ((c == OPENTHREAD_SPINEL_FRAME_MARKER) && (gOnGoingSpinelReception == false)) {      /* Start of Spinel Frame */
-
+    if ((c == OPENTHREAD_SPINEL_FRAME_MARKER) && (gOnGoingSpinelReception == false)) {
+        /* Start of Spinel Frame */
         currentSerialBufferNumber = getFirstEmptySerialBuffer();
         if (OPENTHREAD_ERROR_NO_EMPTY_SERIAL_BUFFER == currentSerialBufferNumber) {
             DEBUG("SERIAL: ERROR => OPENTHREAD_ERROR_NO_EMPTY_SERIAL_BUFFER found\n");
             return;
         }
         frameLength = 0;
-
         gSerialMessage[currentSerialBufferNumber].buf[frameLength] = c;
-
         gOnGoingSpinelReception = true;
     }
-    else if ((c == OPENTHREAD_SPINEL_FRAME_MARKER) && (gOnGoingSpinelReception == true)) {  /* End of Spinel Frame */
+    else if ((c == OPENTHREAD_SPINEL_FRAME_MARKER) && (gOnGoingSpinelReception == true)) {
+        /* End of Spinel Frame */
         if (currentSerialBufferNumber == OPENTHREAD_ERROR_NO_EMPTY_SERIAL_BUFFER) {
             return;
         }
-        if (frameLength == 1) {  /* It means that we handle the Start of a Spinel frame instead of the end */
-
-            frameLength--;
+        if (frameLength == 1) {
+            /* It means that we handle the Start of a Spinel frame instead of the end */
+            //frameLength--;
             return;
         }
-        if(gSerialMessage[currentSerialBufferNumber].serial_buffer_status != OPENTHREAD_SERIAL_BUFFER_STATUS_FULL) {
+
+        if(gSerialMessage[currentSerialBufferNumber].serial_buffer_status !=
+           OPENTHREAD_SERIAL_BUFFER_STATUS_FULL) {
+            /* Ready to process the frame */
             gSerialMessage[currentSerialBufferNumber].buf[frameLength] = (uint8_t) c;
-            gSerialMessage[currentSerialBufferNumber].serial_buffer_status = OPENTHREAD_SERIAL_BUFFER_STATUS_READY_TO_PROCESS;
+            gSerialMessage[currentSerialBufferNumber].serial_buffer_status =
+            OPENTHREAD_SERIAL_BUFFER_STATUS_READY_TO_PROCESS;
             gSerialMessage[currentSerialBufferNumber].length = frameLength + 1;
             msg_t msg;
             msg.type = OPENTHREAD_SERIAL_MSG_TYPE_EVENT;
             msg.content.ptr = &gSerialMessage[currentSerialBufferNumber];
-            msg_send_int(&msg, openthread_get_event_pid());
+            if (msg_send_int(&msg, openthread_get_event_pid()) <= 0) {
+                /* Msg is not passed */
+                gSerialMessage[currentSerialBufferNumber].serial_buffer_status = 
+                OPENTHREAD_SERIAL_BUFFER_STATUS_FREE;
+            }
         }
         else {
-            gSerialMessage[currentSerialBufferNumber].serial_buffer_status = OPENTHREAD_SERIAL_BUFFER_STATUS_FREE;
+            /* Frame is too long */
+            gSerialMessage[currentSerialBufferNumber].serial_buffer_status = 
+            OPENTHREAD_SERIAL_BUFFER_STATUS_FREE;
         }
+
         gOnGoingSpinelReception = false;
         frameLength = 0;
     }
-    else if (gOnGoingSpinelReception == true) {         /* Payload of Spinel Frame */
+    else if (gOnGoingSpinelReception == true) {
+        /* Payload of Spinel Frame */
         if (currentSerialBufferNumber == OPENTHREAD_ERROR_NO_EMPTY_SERIAL_BUFFER) {
             return;
         }
-        if (gSerialMessage[currentSerialBufferNumber].serial_buffer_status != OPENTHREAD_SERIAL_BUFFER_STATUS_FULL) {
+        if (gSerialMessage[currentSerialBufferNumber].serial_buffer_status != 
+            OPENTHREAD_SERIAL_BUFFER_STATUS_FULL) {
             gSerialMessage[currentSerialBufferNumber].buf[frameLength] = (uint8_t) c;
         }
     }
@@ -106,7 +118,8 @@ static void uart_handler(void* arg, char c)  {
         frameLength++;
         if (frameLength >= OPENTHREAD_SERIAL_BUFFER__PAYLOAD_SIZE) {
             DEBUG("SERIAL: ERROR => OPENTHREAD_SERIAL_BUFFER__PAYLOAD_SIZE overflowed\n");
-            gSerialMessage[currentSerialBufferNumber].serial_buffer_status = OPENTHREAD_SERIAL_BUFFER_STATUS_FULL;
+            gSerialMessage[currentSerialBufferNumber].serial_buffer_status = 
+            OPENTHREAD_SERIAL_BUFFER_STATUS_FULL;
         }
     }
 }
