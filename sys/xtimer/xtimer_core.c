@@ -53,6 +53,8 @@ static inline void _lltimer_set(uint32_t target);
 static void _timer_callback(void);
 static void _periph_timer_callback(void *arg, int chan);
 
+static uint32_t fire_target;
+
 static inline int _is_set(xtimer_t *timer)
 {
     return (timer->target || timer->offset);
@@ -160,8 +162,9 @@ static inline void _lltimer_set(uint32_t target)
     if (_in_handler) {
         return;
     }
+    fire_target = target;
     DEBUG("_lltimer_set(): setting %" PRIu32 "\n", _xtimer_lltimer_mask(target));
-    timer_set_absolute(XTIMER_DEV, XTIMER_CHAN, _xtimer_lltimer_mask(target));
+    timer_set_absolute(XTIMER_DEV, XTIMER_CHAN, _xtimer_lltimer_mask(fire_target));
 }
 
 static void _add_timer_to_list(xtimer_t **list_head, xtimer_t *timer)
@@ -268,19 +271,26 @@ overflow:
         if (timer_list_head->offset <= elapsed ||
             timer_list_head->offset - elapsed < XTIMER_ISR_BACKOFF) {
             
-            /* prevent early expiry */
+            /* make sure we don't fire too early */
             while(_xtimer_now() - timer_list_head->start_time < timer_list_head->offset) {}
 
-            /* fire timer */
-            _shoot(timer_list_head);
-
-            /* make sure timer is recognized as being already fired */
-            timer_list_head->target = timer_list_head->offset = 0;
+            /* pick first timer in list */
+            xtimer_t *timer = timer_list_head;
 
             /* advance list */
-            timer_list_head = timer_list_head->next;
+            timer_list_head = timer->next;
+
+            /* make sure timer is recognized as being already fired */
+            timer->target = 0;
+            timer->offset = 0;
+            timer->long_offset = 0;
+
+            /* fire timer */
+            _shoot(timer);
         }
         else {
+            timer_list_head->offset -= elapsed;
+            timer_list_head->start_time = now;
             break;
         }
     }
@@ -300,7 +310,7 @@ overflow:
             timer_list_head->offset -= elapsed;
             timer_list_head->start_time = now;
         }
-
+ 
         if (timer_list_head->offset <= _xtimer_lltimer_mask(0xFFFFFFFF)) {
             /* schedule callback on next timer target time */
             next_target = timer_list_head->target;
