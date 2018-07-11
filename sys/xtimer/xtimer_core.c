@@ -258,38 +258,31 @@ static void _update_long_timers(void)
 static void _timer_callback(void)
 {
     uint32_t next_target, now;
-    xtimer_t *timer = timer_list_head;
     _in_handler = 1;
 
 overflow:
     /* check if any timer is close to expiring */
-    while (timer) {
+    while (timer_list_head) {
         now = _xtimer_now();
-        uint32_t elapsed = now - timer->start_time;
-        if (timer->offset <= elapsed || timer->offset - elapsed < XTIMER_ISR_BACKOFF) {
-            if (timer != timer_list_head) {
-                printf("timer(%lu %lu), head(%lu %lu)\n",
-                timer->target, timer->offset, timer_list_head->target, timer_list_head->offset);
-            }
-            assert(timer == timer_list_head);
-
+        uint32_t elapsed = now - timer_list_head->start_time;
+        if (timer_list_head->offset <= elapsed ||
+            timer_list_head->offset - elapsed < XTIMER_ISR_BACKOFF) {
+            
             /* prevent early expiry */
-            while(_xtimer_now() - timer->start_time < timer->offset) {}
+            while(_xtimer_now() - timer_list_head->start_time < timer_list_head->offset) {}
 
             /* fire timer */
-            _shoot(timer);
+            _shoot(timer_list_head);
 
             /* make sure timer is recognized as being already fired */
-            timer->target = timer->offset = 0;
+            timer_list_head->target = timer_list_head->offset = 0;
 
-            _remove_timer_from_list(&timer_list_head, timer);
+            /* advance list */
+            timer_list_head = timer_list_head->next;
         }
         else {
-            timer->offset -= elapsed;
-            timer->start_time = now;
+            break;
         }
-        /* advance list */    
-        timer = timer->next;
     }
 
     _update_long_timers();
@@ -297,21 +290,20 @@ overflow:
     now = _xtimer_now();
 
     if (timer_list_head) {
-        timer = timer_list_head;
-
         /* make sure we're not setting a time in the past */
-        uint32_t elapsed = now - timer->start_time;
-        if (timer->offset <= elapsed || timer->offset - elapsed <= XTIMER_ISR_BACKOFF) {
+        uint32_t elapsed = now - timer_list_head->start_time;
+        if (timer_list_head->offset <= elapsed ||
+            timer_list_head->offset - elapsed <= XTIMER_ISR_BACKOFF) {
             goto overflow;
         }
         else {
-            timer->offset -= elapsed;
-            timer->start_time = now;
+            timer_list_head->offset -= elapsed;
+            timer_list_head->start_time = now;
         }
 
-        if (timer->offset <= _xtimer_lltimer_mask(0xFFFFFFFF)) {
+        if (timer_list_head->offset <= _xtimer_lltimer_mask(0xFFFFFFFF)) {
             /* schedule callback on next timer target time */
-            next_target = timer->target;
+            next_target = timer_list_head->target;
         }
         else {
             /* schedule callback after max_low_level_time/2
