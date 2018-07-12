@@ -48,12 +48,11 @@ static void _add_timer_to_list(xtimer_t **list_head, xtimer_t *timer);
 static void _add_timer_to_long_list(xtimer_t **list_head, xtimer_t *timer);
 static void _shoot(xtimer_t *timer);
 static void _remove(xtimer_t *timer);
+static void _update_short_timers(void);
 static inline void _lltimer_set(uint32_t target);
 
 static void _timer_callback(void);
 static void _periph_timer_callback(void *arg, int chan);
-
-static uint32_t fire_target;
 
 static inline int _is_set(xtimer_t *timer)
 {
@@ -162,9 +161,8 @@ static inline void _lltimer_set(uint32_t target)
     if (_in_handler) {
         return;
     }
-    fire_target = target;
     DEBUG("_lltimer_set(): setting %" PRIu32 "\n", _xtimer_lltimer_mask(target));
-    timer_set_absolute(XTIMER_DEV, XTIMER_CHAN, _xtimer_lltimer_mask(fire_target));
+    timer_set_absolute(XTIMER_DEV, XTIMER_CHAN, _xtimer_lltimer_mask(target));
 }
 
 static void _add_timer_to_list(xtimer_t **list_head, xtimer_t *timer)
@@ -206,8 +204,32 @@ static int _remove_timer_from_list(xtimer_t **list_head, xtimer_t *timer)
 
 static void _remove(xtimer_t *timer)
 {
-    if (!_remove_timer_from_list(&timer_list_head, timer)) {
-        _remove_timer_from_list(&long_list_head, timer);
+    if (timer == timer_list_head) {
+        timer_list_head = timer->next;
+
+        _update_short_timers();
+
+        if (timer_list_head) {
+            if (timer_list_head->offset <= _xtimer_lltimer_mask(0xFFFFFFFF)) {
+                /* schedule callback on next timer target time */
+                _lltimer_set(timer_list_head->target);
+            }
+            else {
+                /* schedule callback after max_low_level_time/2
+                 * to update _long_cnt and/or _xtimer_high_cnt */
+                _lltimer_set(_xtimer_now() + (_xtimer_lltimer_mask(0xFFFFFFFF)>>1));
+            }
+        }
+        else {
+            /* schedule callback after max_low_level_time/2
+             * to update _long_cnt and/or _xtimer_high_cnt */
+            _lltimer_set(_xtimer_now() + (_xtimer_lltimer_mask(0xFFFFFFFF)>>1));
+        }
+    }
+    else {
+        if (!_remove_timer_from_list(&timer_list_head, timer)) {
+            _remove_timer_from_list(&long_list_head, timer);
+        }
     }
 }
 
@@ -222,8 +244,8 @@ void xtimer_remove(xtimer_t *timer)
 }
 
 /**
- * @brief update long timers' offsets and switch those that will expire in the current
- *        short timer period to the short timer list
+ * @brief update long timers' offsets and switch those that will expire in
+ *        one short timer period to the short timer list
  */
 static void _update_long_timers(void)
 {
@@ -256,21 +278,15 @@ static void _update_long_timers(void)
 }
 
 /**
- * @brief main xtimer callback function
+ * @brief update short timers' offsets and fire those that is close to expiry
  */
-static void _timer_callback(void)
-{
-    uint32_t next_target, now;
-    _in_handler = 1;
-
-overflow:
-    /* check if any timer is close to expiring */
+static void _update_short_timers(void) {
     while (timer_list_head) {
-        now = _xtimer_now();
+        uint32_t now = _xtimer_now();
         uint32_t elapsed = now - timer_list_head->start_time;
+
         if (timer_list_head->offset <= elapsed ||
-            timer_list_head->offset - elapsed < XTIMER_ISR_BACKOFF) {
-            
+            timer_list_head->offset - elapsed < XTIMER_ISR_BACKOFF) {            
             /* make sure we don't fire too early */
             while(_xtimer_now() - timer_list_head->start_time < timer_list_head->offset) {}
 
@@ -291,9 +307,22 @@ overflow:
         else {
             timer_list_head->offset -= elapsed;
             timer_list_head->start_time = now;
-            break;
+            return;
         }
     }
+}
+
+/**
+ * @brief main xtimer callback function
+ */
+static void _timer_callback(void)
+{
+    uint32_t next_target, now;
+    _in_handler = 1;
+
+overflow:
+    /* check if any timer is close to expiring */
+    _update_short_timers();
 
     _update_long_timers();
 
