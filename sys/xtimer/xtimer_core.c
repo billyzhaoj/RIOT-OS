@@ -54,6 +54,8 @@ static inline void _lltimer_set(uint32_t target);
 static void _timer_callback(void);
 static void _periph_timer_callback(void *arg, int chan);
 
+static uint32_t _current_target = 0;
+
 static inline int _is_set(xtimer_t *timer)
 {
     return (timer->target || timer->offset);
@@ -159,10 +161,14 @@ static void _shoot(xtimer_t *timer)
 static inline void _lltimer_set(uint32_t target)
 {
     if (_in_handler) {
+        printf("weird operation\n");
         return;
     }
-    DEBUG("_lltimer_set(): setting %" PRIu32 "\n", _xtimer_lltimer_mask(target));
+    DEBUG("_lltimer_set(): setting %" PRIu32 "\n", _xtimer_lltimer_mask(_current_target));
     timer_set_absolute(XTIMER_DEV, XTIMER_CHAN, _xtimer_lltimer_mask(target));
+    uint8_t state = irq_disable();
+    _current_target = target;
+    irq_restore(state);
 }
 
 static void _add_timer_to_list(xtimer_t **list_head, xtimer_t *timer)
@@ -194,6 +200,10 @@ static int _remove_timer_from_list(xtimer_t **list_head, xtimer_t *timer)
     while (*list_head) {
         if (*list_head == timer) {
             *list_head = timer->next;
+            timer->target = 0;
+            timer->offset = 0;
+            timer->long_offset = 0;
+            timer->next = NULL;
             return 1;
         }
         list_head = &((*list_head)->next);
@@ -206,6 +216,10 @@ static void _remove(xtimer_t *timer)
 {
     if (timer == timer_list_head) {
         timer_list_head = timer->next;
+        timer->target = 0;
+        timer->offset = 0;
+        timer->long_offset = 0;
+        timer->next = NULL;
 
         _update_short_timers();
 
@@ -300,6 +314,7 @@ static void _update_short_timers(void) {
             timer->target = 0;
             timer->offset = 0;
             timer->long_offset = 0;
+            timer->next = NULL;
 
             /* fire timer */
             _shoot(timer);
@@ -319,6 +334,7 @@ static void _timer_callback(void)
 {
     uint32_t next_target, now;
     _in_handler = 1;
+    _current_target = 0;
 
 overflow:
     /* check if any timer is close to expiring */

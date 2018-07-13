@@ -63,7 +63,8 @@ void _xtimer_tsleep(uint32_t offset, uint32_t long_offset)
 
     timer.callback = _callback_unlock_mutex;
     timer.arg = (void*) &mutex;
-    timer.target = timer.offset = 0;
+    timer.target = timer.offset = timer.long_offset = 0;
+    timer.next = NULL;
 
     mutex_lock(&mutex);
     _xtimer_set64(&timer, offset, long_offset);
