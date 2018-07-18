@@ -65,7 +65,7 @@ void otTaskletsSignalPending(otInstance *aInstance) {
         msg_t msg;
         msg.type = OPENTHREAD_TASK_MSG_TYPE_EVENT;
         msg_send(&msg, openthread_get_event_pid());
-    } 
+    }
 }
 
 /* OpenThread Event Thread 
@@ -138,6 +138,7 @@ static void *_openthread_event_thread(void *arg) {
                 if (msg.content.value) {
                     unsigned state = irq_disable();
                     ((at86rf2xx_t *)openthread_get_netdev())->pending_irq--;
+printf("%u\n", ((at86rf2xx_t *)openthread_get_netdev())->pending_irq);
                     irq_restore(state);
                 }
 #endif

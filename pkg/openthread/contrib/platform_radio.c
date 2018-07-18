@@ -35,7 +35,7 @@
 #include "openthread/platform/radio.h"
 #include "ot.h"
 
-#define ENABLE_DEBUG (0)
+#define ENABLE_DEBUG (1)
 #include "debug.h"
 
 #define RADIO_IEEE802154_FCS_LEN    (2U)
@@ -287,7 +287,7 @@ otError otPlatRadioTransmit(otInstance *aInstance, otRadioFrame *aPacket)
         DEBUG("%x ", aPacket->mPsdu[i]);
     }
     DEBUG("\n");*/
-
+printf("TRY SEND\n");
     int success = -1;
     //_set_channel(aPacket->mChannel);
     /* send packet though netdev */
