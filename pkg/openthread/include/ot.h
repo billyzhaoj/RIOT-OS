@@ -206,6 +206,16 @@ xtimer_t* openthread_get_linkretry_timer(void);
 netdev_t* openthread_get_netdev(void);
 
 /**
+ * @brief   lock OpenThread buffer.
+ */
+void openthread_coarse_lock_buffer_mutex(void);
+
+/**
+ * @brief   unlock OpenThread buffer.
+ */
+void openthread_coarse_unlock_buffer_mutex(void);
+
+/**
  * @brief   Init OpenThread random
  */
 void ot_random_init(void);

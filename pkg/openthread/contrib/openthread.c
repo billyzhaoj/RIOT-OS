@@ -52,6 +52,8 @@ static at86rf2xx_t at86rf2xx_dev;
 static msg_t radio_rx_msg;
 static msg_t radio_tx_msg;
 
+static mutex_t buffer_mutex = MUTEX_INIT;
+
 static char ot_event_thread_stack[THREAD_STACKSIZE_MAIN*2];
 static char ot_preevent_thread_stack[THREAD_STACKSIZE_MAIN];
 
@@ -64,6 +66,16 @@ void print_active_pid(void) {
 }
 
 /* lock Openthread buffer mutex */
+void openthread_coarse_lock_buffer_mutex(void) {
+    mutex_lock(&buffer_mutex);
+}
+
+/* unlock Openthread buffer mutex */
+void openthread_coarse_unlock_buffer_mutex(void) {
+    mutex_unlock(&buffer_mutex);
+}
+
+/* lock Openthread buffer mutex */
 void openthread_lock_buffer_mutex(void) {
 }
 
@@ -71,11 +83,11 @@ void openthread_lock_buffer_mutex(void) {
 void openthread_unlock_buffer_mutex(void) {
 }
 
-/* lock Openthread buffer mutex */
+/* lock Openthread uart buffer mutex */
 void openthread_lock_uart_buffer_mutex(void) {
 }
 
-/* unlock Openthread buffer mutex */
+/* unlock Openthread uart buffer mutex */
 void openthread_unlock_uart_buffer_mutex(void) {
 }
 

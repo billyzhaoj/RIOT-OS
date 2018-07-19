@@ -123,7 +123,10 @@ static void *_openthread_event_thread(void *arg) {
             otTaskletsProcess(openthread_get_instance());
         }
 
+        openthread_coarse_unlock_buffer_mutex();
         msg_receive(&msg);
+        openthread_coarse_lock_buffer_mutex();
+
         switch (msg.type) {
             case OPENTHREAD_TASK_MSG_TYPE_EVENT:
                 /* Process OpenThread tasks (pre-processing a sending packet) */
