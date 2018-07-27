@@ -53,12 +53,12 @@ extern "C" {
 #define XTIMER_USEC_TO_TICKS(value)    ( div_u32_by_15625div512(value) )
 #define XTIMER_TICKS_TO_USEC(value)    ( ((uint64_t)value * 15625)>>9 )
 
-#define STIMER_DEV                     TIMER_1 /* This timer is to support low-power/slow XTIMER */
-#define STIMER_HZ                      1000000UL
+//#define STIMER_DEV                     TIMER_1 /* This timer is to support low-power/slow XTIMER */
+//#define STIMER_HZ                      1000000UL
 
 #define XTIMER_BACKOFF                 30  /* ticks: Threshold to determine spin or not
                                               It takes 150~200us to get the current time */
-#define XTIMER_OVERHEAD                6   /* ticks: How much earlier does a timer expires? */
+#define XTIMER_OVERHEAD                0   /* ticks: How much earlier does a timer expires? */
 #define XTIMER_ISR_BACKOFF             20
 #define XTIMER_PERIODIC_RELATIVE       100
 #endif
