@@ -47,6 +47,7 @@ static msg_t _queue[OPENTHREAD_EVENT_QUEUE_LEN];
 static kernel_pid_t _event_pid;
 
 static otInstance *sInstance;
+static bool otTaskPending = false;
 
 /* get OpenThread instance */
 otInstance* openthread_get_instance(void) {
@@ -61,17 +62,18 @@ kernel_pid_t openthread_get_event_pid(void) {
 /* OpenThread will call this when switching state from empty tasklet to non-empty tasklet. */
 void otTaskletsSignalPending(otInstance *aInstance) {
     (void) aInstance;
-    if (thread_getpid() != openthread_get_event_pid()) {
+    if (thread_getpid() != openthread_get_event_pid() && !otTaskPending) {
+        otTaskPending = true;
         msg_t msg;
         msg.type = OPENTHREAD_TASK_MSG_TYPE_EVENT;
         msg_send(&msg, openthread_get_event_pid());
     }
 }
 
-/* OpenThread Event Thread 
+/* OpenThread Event Thread
  * This thread processes all events by calling proper functions of OpenThread.
  * Given that processing interrupts is more urgent than processing posted tasks, this thread
- * preempts OpenThread Task Thread. It is preempted by OpenThread Preevent Thread. 
+ * preempts OpenThread Task Thread. It is preempted by OpenThread Preevent Thread.
 **/
 static void *_openthread_event_thread(void *arg) {
     _event_pid = thread_getpid();
@@ -89,7 +91,7 @@ static void *_openthread_event_thread(void *arg) {
     /* Init OpenThread instance */
     sInstance = otInstanceInitSingle();
     DEBUG("OT-instance setting is OK\n");
-    
+
     /* Init default parameters */
     otPanId panid = OPENTHREAD_PANID;
     uint8_t channel = OPENTHREAD_CHANNEL;
@@ -131,6 +133,7 @@ static void *_openthread_event_thread(void *arg) {
             case OPENTHREAD_TASK_MSG_TYPE_EVENT:
                 /* Process OpenThread tasks (pre-processing a sending packet) */
                 DEBUG("\not_task: OPENTHREAD_TASK_MSG_TYPE_EVENT received\n");
+                otTaskPending = false;
                 break;
             case OPENTHREAD_NETDEV_MSG_TYPE_EVENT:
                 /* Received an event from radio driver */
