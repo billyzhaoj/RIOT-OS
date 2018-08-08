@@ -43,12 +43,14 @@ volatile uint32_t _xtimer_high_cnt = 0;
 
 static xtimer_t *timer_list_head = NULL;
 static xtimer_t *long_list_head = NULL;
+static bool _lltimer_ongoing = false;
 
 static void _add_timer_to_list(xtimer_t **list_head, xtimer_t *timer);
 static void _add_timer_to_long_list(xtimer_t **list_head, xtimer_t *timer);
 static void _shoot(xtimer_t *timer);
 static void _remove(xtimer_t *timer);
-static void _update_short_timers(uint32_t *now);
+static inline void _update_short_timers(uint32_t *now);
+static inline void _update_long_timers(uint32_t *now);
 static inline void _lltimer_set(uint32_t target);
 
 static void _timer_callback(void);
@@ -66,6 +68,7 @@ void xtimer_init(void)
 
     /* register initial overflow tick */
     _lltimer_set(0xFFFFFFFF);
+    _lltimer_ongoing = false;
 }
 
 uint64_t _xtimer_now64(void)
@@ -134,7 +137,7 @@ void _xtimer_set(xtimer_t *timer, uint32_t offset)
                 /* schedule callback on next timer target time */
                 _lltimer_set(timer->target);
             }
-            else {
+            else if (!_lltimer_ongoing) {
                 /* schedule callback after max_low_level_time/2
                  * to update _long_cnt and/or _xtimer_high_cnt */
                 _lltimer_set(timer->start_time + (_xtimer_lltimer_mask(0xFFFFFFFF)>>1));
@@ -163,6 +166,7 @@ static inline void _lltimer_set(uint32_t target)
     }
     DEBUG("_lltimer_set(): setting %" PRIu32 "\n", _xtimer_lltimer_mask(target));
     timer_set_absolute(XTIMER_DEV, XTIMER_CHAN, _xtimer_lltimer_mask(target));
+    _lltimer_ongoing = true;
 }
 
 static void _add_timer_to_list(xtimer_t **list_head, xtimer_t *timer)
@@ -223,13 +227,13 @@ static void _remove(xtimer_t *timer)
                 /* schedule callback on next timer target time */
                 _lltimer_set(timer_list_head->target);
             }
-            else {
+            else if (!_lltimer_ongoing) {
                 /* schedule callback after max_low_level_time/2
                  * to update _long_cnt and/or _xtimer_high_cnt */
                 _lltimer_set(_xtimer_now() + (_xtimer_lltimer_mask(0xFFFFFFFF)>>1));
             }
         }
-        else {
+        else if (!_lltimer_ongoing) {
             /* schedule callback after max_low_level_time/2
              * to update _long_cnt and/or _xtimer_high_cnt */
             _lltimer_set(_xtimer_now() + (_xtimer_lltimer_mask(0xFFFFFFFF)>>1));
@@ -328,6 +332,7 @@ static void _timer_callback(void)
 {
     uint32_t next_target, now;
     _in_handler = 1;
+    _lltimer_ongoing = false;
     now = _xtimer_now();
 
 overflow:
