@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2017 Fundacion Inria Chile
+ *               2018 UC Berkeley
  *
  * This file is subject to the terms and conditions of the GNU Lesser
  * General Public License v2.1. See the file LICENSE in the top level
@@ -13,6 +14,7 @@
  * @brief       Implementation of OpenThread radio platform abstraction
  *
  * @author      Jose Ignacio Alamos <jialamos@uc.cl>
+ *              Hyung-Sin Kim <hs.kim@cs.berkeley.edu>
  * @}
  */
 
@@ -264,7 +266,7 @@ otError otPlatRadioGetTransmitPower(otInstance *aInstance, int8_t *aPower)
     int16_t power = 0;
     _get_power(&power);
     *aPower = (int8_t) power;
-    
+
     return OT_ERROR_NONE;
 }
 
@@ -287,14 +289,13 @@ otError otPlatRadioTransmit(otInstance *aInstance, otRadioFrame *aPacket)
         DEBUG("%x ", aPacket->mPsdu[i]);
     }
     DEBUG("\n");*/
-printf("TRY SEND\n");
     int success = -1;
     //_set_channel(aPacket->mChannel);
     /* send packet though netdev */
     success = _dev->driver->send(_dev, &pkt, 1);
     if (success == -1) {
         /* Fail to send since the transceiver is busy (receiving).
-         * Retry in a little bit. 
+         * Retry in a little bit.
          */
         if (_get_state() != NETOPT_STATE_RX) {
             _set_idle();
@@ -406,7 +407,7 @@ otError otPlatRadioClearSrcMatchExtEntry(otInstance *aInstance, const otExtAddre
 /* OpenThread will call this to clear indirect transmission list */
 void otPlatRadioClearSrcMatchShortEntries(otInstance *aInstance)
 {
-    DEBUG("otPlatRadioClearSrcMatchShortEntries\n");    
+    DEBUG("otPlatRadioClearSrcMatchShortEntries\n");
     (void)aInstance;
     short_address_list = 0;
     if (ext_address_list == 0 && short_address_list == 0) {
@@ -423,7 +424,7 @@ void otPlatRadioClearSrcMatchExtEntries(otInstance *aInstance)
     ext_address_list = 0;
     if (ext_address_list == 0 && short_address_list == 0) {
         bool pending = false;
-        _dev->driver->set(_dev, NETOPT_ACK_PENDING, &pending, sizeof(bool)); 
+        _dev->driver->set(_dev, NETOPT_ACK_PENDING, &pending, sizeof(bool));
     }
 }
 
@@ -513,7 +514,7 @@ void recv_pkt(otInstance *aInstance, netdev_t *dev)
     res = dev->driver->recv(dev, (char *) sReceiveFrame.mPsdu, OPENTHREAD_NETDEV_BUFLEN, &rx_info);
 
     /* very unlikely */
-    //if ((len > (unsigned) UINT16_MAX)) {    
+    //if ((len > (unsigned) UINT16_MAX)) {
     //    DEBUG("Len too high: %d\n", len);
     if (res < 0) {
         DEBUG("Error: %d\n", res);
@@ -526,7 +527,7 @@ void recv_pkt(otInstance *aInstance, netdev_t *dev)
      * OpenThread do not use the data so we don't need to calculate FCS */
     //sReceiveFrame.mLength = len + RADIO_IEEE802154_FCS_LEN;
     sReceiveFrame.mLength = res + RADIO_IEEE802154_FCS_LEN;
-    
+
     /* Read received frame */
     //res = dev->driver->recv(dev, (char *) sReceiveFrame.mPsdu, len, &rx_info);
 
@@ -543,6 +544,6 @@ void recv_pkt(otInstance *aInstance, netdev_t *dev)
     }
     DEBUG("\n");*/
 exit:
-    otPlatRadioReceiveDone(aInstance, res > 0 ? &sReceiveFrame : NULL, 
+    otPlatRadioReceiveDone(aInstance, res > 0 ? &sReceiveFrame : NULL,
                            res > 0 ? OT_ERROR_NONE : OT_ERROR_ABORT);
 }

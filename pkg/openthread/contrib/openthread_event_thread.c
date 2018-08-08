@@ -132,7 +132,7 @@ static void *_openthread_event_thread(void *arg) {
         switch (msg.type) {
             case OPENTHREAD_TASK_MSG_TYPE_EVENT:
                 /* Process OpenThread tasks (pre-processing a sending packet) */
-                DEBUG("\not_task: OPENTHREAD_TASK_MSG_TYPE_EVENT received\n");
+                DEBUG("\not_event: OPENTHREAD_TASK_MSG_TYPE_EVENT received\n");
                 otTaskPending = false;
                 break;
             case OPENTHREAD_NETDEV_MSG_TYPE_EVENT:
@@ -144,7 +144,6 @@ static void *_openthread_event_thread(void *arg) {
                 if (msg.content.value) {
                     unsigned state = irq_disable();
                     ((at86rf2xx_t *)openthread_get_netdev())->pending_irq--;
-printf("%u\n", ((at86rf2xx_t *)openthread_get_netdev())->pending_irq);
                     irq_restore(state);
                 }
 #endif
