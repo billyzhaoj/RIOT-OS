@@ -88,15 +88,15 @@ static void uart_handler(void* arg, char c)  {
             msg_t msg;
             msg.type = OPENTHREAD_SERIAL_MSG_TYPE_EVENT;
             msg.content.ptr = &gSerialMessage[currentSerialBufferNumber];
-            if (msg_send_int(&msg, openthread_get_event_pid()) <= 0) {
+            if (msg_send_int(&msg, openthread_get_main_pid()) <= 0) {
                 /* Msg is not passed */
-                gSerialMessage[currentSerialBufferNumber].serial_buffer_status = 
+                gSerialMessage[currentSerialBufferNumber].serial_buffer_status =
                 OPENTHREAD_SERIAL_BUFFER_STATUS_FREE;
             }
         }
         else {
             /* Frame is too long */
-            gSerialMessage[currentSerialBufferNumber].serial_buffer_status = 
+            gSerialMessage[currentSerialBufferNumber].serial_buffer_status =
             OPENTHREAD_SERIAL_BUFFER_STATUS_FREE;
         }
 
@@ -108,7 +108,7 @@ static void uart_handler(void* arg, char c)  {
         if (currentSerialBufferNumber == OPENTHREAD_ERROR_NO_EMPTY_SERIAL_BUFFER) {
             return;
         }
-        if (gSerialMessage[currentSerialBufferNumber].serial_buffer_status != 
+        if (gSerialMessage[currentSerialBufferNumber].serial_buffer_status !=
             OPENTHREAD_SERIAL_BUFFER_STATUS_FULL) {
             gSerialMessage[currentSerialBufferNumber].buf[frameLength] = (uint8_t) c;
         }
@@ -118,7 +118,7 @@ static void uart_handler(void* arg, char c)  {
         frameLength++;
         if (frameLength >= OPENTHREAD_SERIAL_BUFFER__PAYLOAD_SIZE) {
             DEBUG("SERIAL: ERROR => OPENTHREAD_SERIAL_BUFFER__PAYLOAD_SIZE overflowed\n");
-            gSerialMessage[currentSerialBufferNumber].serial_buffer_status = 
+            gSerialMessage[currentSerialBufferNumber].serial_buffer_status =
             OPENTHREAD_SERIAL_BUFFER_STATUS_FULL;
         }
     }
@@ -140,7 +140,7 @@ static void uart_handler(void* arg, char c) {
                 msg_t msg;
                 msg.type = OPENTHREAD_SERIAL_MSG_TYPE_EVENT;
                 msg.content.ptr = &gSerialMessage[0];
-                msg_send_int(&msg, openthread_get_event_pid());
+                msg_send_int(&msg, openthread_get_main_pid());
                 frameLength = 0;
             }
             break;

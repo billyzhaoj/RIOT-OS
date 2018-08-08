@@ -127,19 +127,6 @@ void openthread_bootstrap(void);
 void openthread_radio_init(netdev_t *dev);
 
 /**
- * @brief   Starts OpenThread Preevent Thread.
- *
- * @param[in]  stack              pointer to the stack designed for OpenThread Preevent Thread
- * @param[in]  stacksize          size of the stack
- * @param[in]  priority           priority of the stack
- * @param[in]  name               name of the stack
- *
- * @return  PID of OpenThread Preevent Thread
- * @return  -EINVAL if there was an error creating the thread
- */
-int openthread_preevent_init(char *stack, int stacksize, char priority, const char *name);
-
-/**
  * @brief   Starts OpenThread Event Thread.
  *
  * @param[in]  stack              pointer to the stack designed for OpenThread Event Thread
@@ -153,18 +140,31 @@ int openthread_preevent_init(char *stack, int stacksize, char priority, const ch
 int openthread_event_init(char *stack, int stacksize, char priority, const char *name);
 
 /**
- * @brief   get PID of OpenThread Preevent thread.
+ * @brief   Starts OpenThread Main Thread.
  *
- * @return  PID of OpenThread Preevent thread
+ * @param[in]  stack              pointer to the stack designed for OpenThread Main Thread
+ * @param[in]  stacksize          size of the stack
+ * @param[in]  priority           priority of the stack
+ * @param[in]  name               name of the stack
+ *
+ * @return  PID of OpenThread Main Thread
+ * @return  -EINVAL if there was an error creating the thread
  */
-kernel_pid_t openthread_get_preevent_pid(void);
+int openthread_main_init(char *stack, int stacksize, char priority, const char *name);
 
 /**
- * @brief   get PID of OpenThread Event Thread.
+ * @brief   get PID of OpenThread Event thread.
  *
- * @return  PID of OpenThread Event Thread
+ * @return  PID of OpenThread Event thread
  */
 kernel_pid_t openthread_get_event_pid(void);
+
+/**
+ * @brief   get PID of OpenThread Main Thread.
+ *
+ * @return  PID of OpenThread Main Thread
+ */
+kernel_pid_t openthread_get_main_pid(void);
 
 /**
  * @brief   get instance of OpenThread.
