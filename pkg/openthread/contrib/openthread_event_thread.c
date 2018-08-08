@@ -94,6 +94,12 @@ static void *_openthread_event_thread(void *arg) {
                 msg.type = OPENTHREAD_NETDEV_MSG_TYPE_RADIO_BUSY;
                 msg_send(&msg, openthread_get_main_pid());
                 break;
+            case OPENTHREAD_SERIAL_MSG_TYPE_EVENT:
+                /* Tell OpenThread about the reception of a CLI command */
+                DEBUG("\not_event: OPENTHREAD_SERIAL_MSG_TYPE received\n");
+                msg.type = OPENTHREAD_SERIAL_MSG_TYPE_EVENT;
+                msg_send(&msg, openthread_get_main_pid());
+                break;
         }
     }
 
