@@ -642,6 +642,31 @@ void xtimer_set_timeout_flag(xtimer_t *t, uint32_t timeout);
 #error "XTIMER_SHIFT is set relative to XTIMER_HZ, no manual define required!"
 #endif
 
+/**
+ * @brief    xtimer cooperation mode
+ *
+ * Although the main system clock usually a very fast, high-power clock, xtimer
+ * can operate based on another low-power, slow clock for low power operation
+ * in the deep sleep mode. In this case, the xtimer clock and the main clock are
+ * in different clock domians, resulting in long latency for reading the current
+ * time (hardware architecture dependent).
+ *
+ * To mitigate this, this feature allows a node to access its slow clock only
+ * once after it wakes up, and use the main clock after then, reducing power
+ * consumption.
+ */
+#ifndef XTIMER_COOPERATION
+#define XTIMER_COOPERATION             (0)
+#endif
+#if XTIMER_COOPERATION
+#if (!defined STIMER_DEV) || (!defined STIMER_HZ)
+#error "XTIMER_COOPERATION needs STIMER (setting STIMER_DEV and STIMER_HZ)!"
+#endif
+#if (STIMER_HZ <= XTIMER_HZ)
+#error "XTIMER_COOPERATION expects STIMER to be faster than STIMER!"
+#endif
+#endif
+
 #include "xtimer/tick_conversion.h"
 
 #include "xtimer/implementation.h"

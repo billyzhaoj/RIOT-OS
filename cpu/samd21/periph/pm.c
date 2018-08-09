@@ -55,9 +55,10 @@ enum system_sleepmode {
 void pm_set(unsigned mode)
 {
     int deep = 0;
-//#if (XTIMER_HZ < 1000000ul) && (STIMER_HZ >= 1000000ul)
-//    xtimer_sync = false;
-//#endif
+
+#if XTIMER_COOPERATION
+    timer_sync = false;
+#endif
 
     switch (mode) {
         case 0:

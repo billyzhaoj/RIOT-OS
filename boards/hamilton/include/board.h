@@ -52,22 +52,22 @@ extern "C" {
 #define XTIMER_HZ                      32768UL
 #define XTIMER_USEC_TO_TICKS(value)    ( div_u32_by_15625div512(value) )
 #define XTIMER_TICKS_TO_USEC(value)    ( ((uint64_t)value * 15625)>>9 )
-
-//#define STIMER_DEV                     TIMER_1 /* This timer is to support low-power/slow XTIMER */
-//#define STIMER_HZ                      1000000UL
-
 #define XTIMER_BACKOFF                 30  /* ticks: Threshold to determine spin or not
                                               It takes 150~200us to get the current time */
-#define XTIMER_OVERHEAD                0   /* ticks: How much earlier does a timer expires? */
 #define XTIMER_ISR_BACKOFF             20
-#define XTIMER_PERIODIC_RELATIVE       100
+#define XTIMER_COOPERATION             (1)
 #endif
 
- /**
-  * @name AT86RF233 configuration
-  *
-  * {spi bus, spi speed, cs pin, int pin, reset pin, sleep pin}
-  */
+#if XTIMER_COOPERATION
+#define STIMER_DEV                     TIMER_1 /* This timer is to support low-power/slow XTIMER */
+#define STIMER_HZ                      1000000UL
+#endif
+
+/**
+ * @name AT86RF233 configuration
+ *
+ * {spi bus, spi speed, cs pin, int pin, reset pin, sleep pin}
+ */
 #if CLOCK_USE_OSCULP32_DFLL || CLOCK_USE_PLL
 #define AT86RF2XX_PARAMS_BOARD      {.spi = SPI_DEV(0), \
                                      .spi_clk = SPI_CLK_8MHZ, \

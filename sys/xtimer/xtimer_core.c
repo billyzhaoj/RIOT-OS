@@ -40,6 +40,11 @@ volatile uint32_t _long_cnt = 0;
 #if XTIMER_MASK
 volatile uint32_t _xtimer_high_cnt = 0;
 #endif
+#if XTIMER_COOPERATION
+volatile bool timer_sync = false;
+volatile uint32_t _xlltimer_now = 0;
+volatile uint32_t _slltimer_now = 0;
+#endif
 
 static xtimer_t *timer_list_head = NULL;
 static xtimer_t *long_list_head = NULL;
@@ -65,6 +70,9 @@ void xtimer_init(void)
 {
     /* initialize low-level timer */
     timer_init(XTIMER_DEV, XTIMER_HZ, _periph_timer_callback, NULL);
+#if XTIMER_COOPERATION
+    timer_init(STIMER_DEV, STIMER_HZ, _periph_timer_callback, NULL);
+#endif
 
     /* register initial overflow tick */
     _lltimer_set(0xFFFFFFFF);

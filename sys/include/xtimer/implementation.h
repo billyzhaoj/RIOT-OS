@@ -38,6 +38,11 @@ extern volatile uint32_t _xtimer_high_cnt;
 #endif
 extern volatile uint32_t _long_cnt;
 extern volatile uint64_t _xtimer_current_time;
+#if XTIMER_COOPERATION
+extern volatile bool timer_sync;
+extern volatile uint32_t _slltimer_now;
+extern volatile uint32_t _xlltimer_now;
+#endif
 
 /**
  * @brief IPC message type for xtimer msg callback
@@ -49,7 +54,25 @@ extern volatile uint64_t _xtimer_current_time;
  */
 static inline uint32_t _xtimer_lltimer_now(void)
 {
+#if XTIMER_COOPERATION
+    if (timer_sync) {
+        uint32_t now = timer_read(STIMER_DEV);
+        uint32_t offset = (uint32_t)((uint64_t)(now - _slltimer_now) *
+                                    XTIMER_HZ / STIMER_HZ);
+        if (offset) {
+            _xlltimer_now += offset;
+            _slltimer_now = now;
+        }
+    }
+    else {
+        timer_sync = true;
+        _slltimer_now = timer_read(STIMER_DEV);
+        _xlltimer_now = timer_read(XTIMER_DEV);
+    }
+    return _xlltimer_now;
+#else
     return timer_read(XTIMER_DEV);
+#endif
 }
 
 /**
@@ -111,7 +134,7 @@ static inline uint32_t _xtimer_now(void)
     elapsed = now - ((uint32_t)_xtimer_current_time & 0xFFFFFFFF);
     _xtimer_current_time += (uint64_t)elapsed;
     _long_cnt = (uint32_t)(_xtimer_current_time >> 32);
-#endif  
+#endif
     irq_restore(state);
 
     return (uint32_t)_xtimer_current_time;
