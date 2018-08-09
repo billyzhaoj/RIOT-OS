@@ -53,9 +53,11 @@ static msg_t radio_rx_msg;
 static msg_t radio_tx_msg;
 
 static mutex_t buffer_mutex = MUTEX_INIT;
+static mutex_t radio_mutex = MUTEX_INIT;
 
-static char ot_main_thread_stack[THREAD_STACKSIZE_MAIN*2];
-static char ot_event_thread_stack[THREAD_STACKSIZE_MAIN];
+static char ot_main_thread_stack[THREAD_STACKSIZE_MAIN];
+static char ot_task_thread_stack[THREAD_STACKSIZE_MAIN];
+static char ot_event_thread_stack[THREAD_STACKSIZE_IDLE];
 
 void print_active_pid(void) {
     unsigned int pid = sched_active_pid;
@@ -63,6 +65,16 @@ void print_active_pid(void) {
         printf("pid is 5\n");
     }
     printf("pid %u\n", pid);
+}
+
+/* lock Openthread buffer mutex */
+void lock_radio_mutex(void) {
+    mutex_lock(&radio_mutex);
+}
+
+/* unlock Openthread buffer mutex */
+void unlock_radio_mutex(void) {
+    mutex_unlock(&radio_mutex);
 }
 
 /* lock Openthread buffer mutex */
@@ -118,9 +130,9 @@ xtimer_t* openthread_get_linkretry_timer(void) {
 /* Interupt handler for OpenThread linkretry-timer event */
 static void _linkretry_timer_cb(void* arg) {
     linkretry_timer_msg.type = OPENTHREAD_LINK_RETRY_TIMEOUT;
-	if (msg_send(&linkretry_timer_msg, openthread_get_event_pid()) <= 0) {
+  	if (msg_send(&linkretry_timer_msg, openthread_get_task_pid()) <= 0) {
         while (1) {
-            printf("ot_event: possibly lost timer interrupt.\n");
+            printf("ot_task: possibly lost timer interrupt.\n");
         }
     }
 }
@@ -129,7 +141,7 @@ static void _linkretry_timer_cb(void* arg) {
 /* Interupt handler for OpenThread milli-timer event */
 static void _millitimer_cb(void* arg) {
     millitimer_msg.type = OPENTHREAD_MILLITIMER_MSG_TYPE_EVENT;
-	if (msg_send(&millitimer_msg, openthread_get_event_pid()) <= 0) {
+	  if (msg_send(&millitimer_msg, openthread_get_event_pid()) <= 0) {
         while (1) {
             printf("ot_event: possibly lost timer interrupt.\n");
         }
@@ -145,9 +157,9 @@ xtimer_t* openthread_get_microtimer(void) {
 /* Interupt handler for OpenThread micro-timer event */
 static void _microtimer_cb(void* arg) {
    	microtimer_msg.type = OPENTHREAD_MICROTIMER_MSG_TYPE_EVENT;
-	if (msg_send(&microtimer_msg, openthread_get_event_pid()) <= 0) {
+	  if (msg_send(&microtimer_msg, openthread_get_task_pid()) <= 0) {
         while(1) {
-            printf("ot_event: possibly lost timer interrupt.\n");
+            printf("ot_task: possibly lost timer interrupt.\n");
         }
     }
 }
@@ -166,8 +178,8 @@ static void _event_cb(netdev_t *dev, netdev_event_t event) {
                 ((at86rf2xx_t *)dev)->pending_irq++;
                 irq_restore(irq_state);
 #endif
-                if (msg_send(&radio_rx_msg, openthread_get_event_pid()) <= 0) {
-                    printf("ot_event: possibly lost radio interrupt.\n");
+                if (msg_send(&radio_rx_msg, openthread_get_main_pid()) <= 0) {
+                    printf("ot_main: possibly lost radio interrupt.\n");
 #ifdef MODULE_OPENTHREAD_FTD
                     unsigned irq_state = irq_disable();
                     ((at86rf2xx_t *)dev)->pending_irq--;
@@ -181,8 +193,8 @@ static void _event_cb(netdev_t *dev, netdev_event_t event) {
                 radio_tx_msg.type = OPENTHREAD_NETDEV_MSG_TYPE_EVENT;
                 radio_tx_msg.content.ptr = dev;
                 radio_tx_msg.content.value = 0;
-                if (msg_send(&radio_tx_msg, openthread_get_event_pid()) <= 0) {
-                    printf("ot_event: possibly lost radio interrupt.\n");
+                if (msg_send(&radio_tx_msg, openthread_get_task_pid()) <= 0) {
+                    printf("ot_task: possibly lost radio interrupt.\n");
                 }
                 break;
             }
@@ -210,7 +222,7 @@ uint8_t ot_call_command(char* command, void *arg, void* answer) {
     msg_t msg, reply;
     msg.type = OPENTHREAD_JOB_MSG_TYPE_EVENT;
     msg.content.ptr = &job;
-    msg_send_receive(&msg, &reply, openthread_get_event_pid());
+    msg_send_receive(&msg, &reply, openthread_get_main_pid());
     return (uint8_t)reply.content.value;
 }
 
@@ -248,7 +260,9 @@ void openthread_bootstrap(void)
 
     /* init three threads for openthread */
     openthread_event_init(ot_event_thread_stack, sizeof(ot_event_thread_stack),
-                         THREAD_PRIORITY_MAIN - 2, "openthread_event");
+                         THREAD_PRIORITY_MAIN - 3, "openthread_event");
+    openthread_task_init(ot_task_thread_stack, sizeof(ot_task_thread_stack),
+                        THREAD_PRIORITY_MAIN - 1, "openthread_task");
     openthread_main_init(ot_main_thread_stack, sizeof(ot_main_thread_stack),
-                         THREAD_PRIORITY_MAIN - 1, "openthread_main");
+                         THREAD_PRIORITY_MAIN - 2, "openthread_main");
 }

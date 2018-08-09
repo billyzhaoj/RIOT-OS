@@ -19,10 +19,8 @@
  */
 
 #include "openthread/platform/alarm-milli.h"
-#include "openthread/platform/alarm-micro.h"
 #include "openthread/platform/uart.h"
 #include "openthread/cli.h"
-#include "openthread/tasklet.h"
 #include "openthread/ip6.h"
 #include "openthread/thread.h"
 #include "openthread/instance.h"
@@ -42,12 +40,12 @@ extern void wdt_clear(void);
 #define ENABLE_DEBUG (0)
 #include "debug.h"
 
-#define OPENTHREAD_MAIN_QUEUE_LEN (16)
+#define OPENTHREAD_MAIN_QUEUE_LEN (8)
 static msg_t _queue[OPENTHREAD_MAIN_QUEUE_LEN];
 static kernel_pid_t _ot_main_pid;
 
 static otInstance *sInstance;
-static bool otTaskPending = false;
+extern volatile bool otTaskPending;
 
 /* get OpenThread instance */
 otInstance* openthread_get_instance(void) {
@@ -62,11 +60,11 @@ kernel_pid_t openthread_get_main_pid(void) {
 /* OpenThread will call this when switching state from empty tasklet to non-empty tasklet. */
 void otTaskletsSignalPending(otInstance *aInstance) {
     (void) aInstance;
-    if (thread_getpid() != openthread_get_main_pid() && !otTaskPending) {
+    if (thread_getpid() != openthread_get_task_pid() && !otTaskPending) {
         otTaskPending = true;
         msg_t msg;
         msg.type = OPENTHREAD_TASK_MSG_TYPE_EVENT;
-        msg_send(&msg, openthread_get_main_pid());
+        msg_send(&msg, openthread_get_task_pid());
     }
 }
 
@@ -120,25 +118,17 @@ static void *_openthread_main_thread(void *arg) {
 #endif
 
     while (1) {
-        while(otTaskletsArePending(openthread_get_instance())) {
-            otTaskletsProcess(openthread_get_instance());
-        }
-
-        openthread_coarse_unlock_buffer_mutex();
         msg_receive(&msg);
         openthread_coarse_lock_buffer_mutex();
 
         switch (msg.type) {
-            case OPENTHREAD_TASK_MSG_TYPE_EVENT:
-                /* Process OpenThread tasks (pre-processing a sending packet) */
-                DEBUG("\not_main: OPENTHREAD_TASK_MSG_TYPE_EVENT received\n");
-                otTaskPending = false;
-                break;
             case OPENTHREAD_NETDEV_MSG_TYPE_EVENT:
                 /* Received an event from radio driver */
                 DEBUG("\not_main: OPENTHREAD_NETDEV_MSG_TYPE_EVENT received\n");
                 /* Wait until the task thread finishes accessing the shared resoure (radio) */
+                lock_radio_mutex();
                 openthread_get_netdev()->driver->isr(openthread_get_netdev());
+                unlock_radio_mutex();
 #ifdef MODULE_OPENTHREAD_FTD
                 if (msg.content.value) {
                     unsigned state = irq_disable();
@@ -147,29 +137,11 @@ static void *_openthread_main_thread(void *arg) {
                 }
 #endif
                 break;
-            case OPENTHREAD_LINK_RETRY_TIMEOUT:
-                DEBUG("\not_main: OPENTHREAD_LINK_RETRY_TIMEOUT\n");
-                sent_pkt(openthread_get_instance(), NETDEV_EVENT_TX_NOACK);
-                break;
-            case OPENTHREAD_NETDEV_MSG_TYPE_RADIO_BUSY:
-                /* Radio is busy */
-                DEBUG("\not_main: OPENTHREAD_NETDEV_MSG_TYPE_RADIO_BUSY received\n");
-                sent_pkt(openthread_get_instance(), NETDEV_EVENT_TX_MEDIUM_BUSY);
-                break;
             case OPENTHREAD_MILLITIMER_MSG_TYPE_EVENT:
                 /* Tell OpenThread a millisec time event was received */
                 DEBUG("\not_main: OPENTHREAD_MILLITIMER_MSG_TYPE_EVENT received\n");
                 otPlatAlarmMilliFired(sInstance);
                 break;
-#ifdef MODULE_OPENTHREAD_FTD
-            case OPENTHREAD_MICROTIMER_MSG_TYPE_EVENT:
-                /* Tell OpenThread a microsec time event was received (CSMA timer)
-                 * It checks the current time and executes callback functions of
-                 * only expired timers. */
-                DEBUG("\not_main: OPENTHREAD_MICROTIMER_MSG_TYPE_EVENT received\n");
-                otPlatAlarmMicroFired(openthread_get_instance());
-                break;
-#endif
             case OPENTHREAD_SERIAL_MSG_TYPE_EVENT:
                 /* Tell OpenThread about the reception of a CLI command */
                 DEBUG("\not_main: OPENTHREAD_SERIAL_MSG_TYPE received\n");
@@ -188,6 +160,8 @@ static void *_openthread_main_thread(void *arg) {
                 msg_reply(&msg, &reply);
                 break;
         }
+
+        openthread_coarse_unlock_buffer_mutex();
     }
 
     return NULL;

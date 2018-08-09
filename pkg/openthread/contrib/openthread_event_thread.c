@@ -21,7 +21,7 @@
 #define ENABLE_DEBUG (0)
 #include "debug.h"
 
-#define OPENTHREAD_EVENT_QUEUE_LEN (4)
+#define OPENTHREAD_EVENT_QUEUE_LEN (2)
 static msg_t _queue[OPENTHREAD_EVENT_QUEUE_LEN];
 static kernel_pid_t _ot_event_pid;
 
@@ -66,32 +66,6 @@ static void *_openthread_event_thread(void *arg) {
                 /* Tell event_thread a time event was received */
                 DEBUG("ot_event: OPENTHREAD_MILLITIMER_MSG_TYPE_EVENT received\n");
                 msg.type = OPENTHREAD_MILLITIMER_MSG_TYPE_EVENT;
-                msg_send(&msg, openthread_get_main_pid());
-                break;
-#ifdef MODULE_OPENTHREAD_FTD
-            case OPENTHREAD_MICROTIMER_MSG_TYPE_EVENT:
-                /* Tell OpenThread a microsec time event was received (CSMA timer)
-                 * only expired timers. */
-                DEBUG("\not_event: OPENTHREAD_MICROTIMER_MSG_TYPE_EVENT received\n");
-                msg.type = OPENTHREAD_MICROTIMER_MSG_TYPE_EVENT;
-                msg_send(&msg, openthread_get_main_pid());
-                break;
-#endif
-            case OPENTHREAD_LINK_RETRY_TIMEOUT:
-                DEBUG("\not_event: OPENTHREAD_LINK_RETRY_TIMEOUT\n");
-                msg.type = OPENTHREAD_LINK_RETRY_TIMEOUT;
-                msg_send(&msg, openthread_get_main_pid());
-                break;
-            case OPENTHREAD_NETDEV_MSG_TYPE_EVENT:
-                /* Received an event from radio driver */
-                DEBUG("\not_event: OPENTHREAD_NETDEV_MSG_TYPE_EVENT received\n");
-                msg.type = OPENTHREAD_NETDEV_MSG_TYPE_EVENT;
-                msg_send(&msg, openthread_get_main_pid());
-                break;
-            case OPENTHREAD_NETDEV_MSG_TYPE_RADIO_BUSY:
-                /* Received an event from radio driver */
-                DEBUG("\not_event: OPENTHREAD_NETDEV_MSG_TYPE_EVENT received\n");
-                msg.type = OPENTHREAD_NETDEV_MSG_TYPE_RADIO_BUSY;
                 msg_send(&msg, openthread_get_main_pid());
                 break;
             case OPENTHREAD_SERIAL_MSG_TYPE_EVENT:
