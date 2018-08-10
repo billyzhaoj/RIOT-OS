@@ -54,6 +54,10 @@ static msg_t radio_tx_msg;
 
 static mutex_t buffer_mutex = MUTEX_INIT;
 static mutex_t radio_mutex = MUTEX_INIT;
+#if OPENTHREAD_FINEGRAINED_LOCK
+static mutex_t uart_buffer_mutex = MUTEX_INIT;
+static mutex_t tasklet_mutex = MUTEX_INIT;
+#endif
 
 static char ot_main_thread_stack[THREAD_STACKSIZE_MAIN];
 static char ot_task_thread_stack[THREAD_STACKSIZE_MAIN];
@@ -77,38 +81,60 @@ void unlock_radio_mutex(void) {
     mutex_unlock(&radio_mutex);
 }
 
-/* lock Openthread buffer mutex */
+/* lock Openthread buffer mutex (roughly) */
 void openthread_coarse_lock_buffer_mutex(void) {
+#if (!OPENTHREAD_FINEGRAINED_LOCK)
     mutex_lock(&buffer_mutex);
+#endif
 }
 
-/* unlock Openthread buffer mutex */
+/* unlock Openthread buffer mutex (roughly) */
 void openthread_coarse_unlock_buffer_mutex(void) {
+#if (!OPENTHREAD_FINEGRAINED_LOCK)
     mutex_unlock(&buffer_mutex);
+#endif
 }
 
 /* lock Openthread buffer mutex */
 void openthread_lock_buffer_mutex(void) {
+#if OPENTHREAD_FINEGRAINED_LOCK
+    mutex_lock(&buffer_mutex);
+#endif
 }
 
 /* unlock Openthread buffer mutex */
 void openthread_unlock_buffer_mutex(void) {
+#if OPENTHREAD_FINEGRAINED_LOCK
+    mutex_unlock(&buffer_mutex);
+#endif
 }
 
 /* lock Openthread uart buffer mutex */
 void openthread_lock_uart_buffer_mutex(void) {
+#if OPENTHREAD_FINEGRAINED_LOCK
+    mutex_lock(&uart_buffer_mutex);
+#endif
 }
 
 /* unlock Openthread uart buffer mutex */
 void openthread_unlock_uart_buffer_mutex(void) {
+#if OPENTHREAD_FINEGRAINED_LOCK
+    mutex_unlock(&uart_buffer_mutex);
+#endif
 }
 
 /* lock Openthread tasklet mutex */
 void openthread_lock_tasklet_mutex(void) {
+#if OPENTHREAD_FINEGRAINED_LOCK
+    mutex_unlock(&tasklet_mutex);
+#endif
 }
 
 /* unlock Openthread tasklet mutex */
 void openthread_unlock_tasklet_mutex(void) {
+#if OPENTHREAD_FINEGRAINED_LOCK
+    mutex_unlock(&tasklet_mutex);
+#endif
 }
 
 /* get OpenThread netdev */

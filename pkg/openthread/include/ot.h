@@ -37,6 +37,11 @@ extern "C" {
 #include "platform_config.h"
 #include "openthread/types.h"
 
+/**< lock mode about whether to lock inside or outside of OpenThread */
+#ifndef OPENTHREAD_FINEGRAINED_LOCK
+#define OPENTHREAD_FINEGRAINED_LOCK                         (0)
+#endif
+
 /**< event indicating the tasklet is non-empty */
 #define OPENTHREAD_TASK_MSG_TYPE_EVENT                      (0x2235)
 /**< milli-timer message receiver event */
