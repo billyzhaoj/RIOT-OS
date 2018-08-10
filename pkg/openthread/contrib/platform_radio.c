@@ -289,6 +289,9 @@ otError otPlatRadioTransmit(otInstance *aInstance, otRadioFrame *aPacket)
         DEBUG("%x ", aPacket->mPsdu[i]);
     }
     DEBUG("\n");*/
+
+    lock_radio_mutex();
+
     int success = -1;
     //_set_channel(aPacket->mChannel);
     /* send packet though netdev */
@@ -303,6 +306,8 @@ otError otPlatRadioTransmit(otInstance *aInstance, otRadioFrame *aPacket)
         msg.type = OPENTHREAD_NETDEV_MSG_TYPE_RADIO_BUSY;
         msg_send(&msg, openthread_get_task_pid());
     }
+
+    unlock_radio_mutex();
 
     return OT_ERROR_NONE;
 }
