@@ -112,7 +112,7 @@ static int _send(netdev_t *netdev, const struct iovec *vector, unsigned count)
     size_t len = 0;
 
     /* When an RX_END event happens while executing this function, this event is
-     * processed after this function ends, misinterpreted as a TX_END event 
+     * processed after this function ends, misinterpreted as a TX_END event
      */
     bool state_transition = at86rf2xx_tx_prepare(dev);
     if (!state_transition) {
@@ -621,17 +621,17 @@ static void _isr(netdev_t *netdev)
             if ((--dev->pending_tx) == 0) {
 #if MODULE_GNRC_LASMAC
 #if LEAF_NODE
-				/* Wake up for a while when receiving an ACK with pending bit */
-				if (trac_status == AT86RF2XX_TRX_STATE__TRAC_SUCCESS_DATA_PENDING) {
-	                dev->idle_state = AT86RF2XX_STATE_RX_AACK_ON;		
-				}
+				            /* Wake up for a while when receiving an ACK with pending bit */
+				            if (trac_status == AT86RF2XX_TRX_STATE__TRAC_SUCCESS_DATA_PENDING) {
+	                   dev->idle_state = AT86RF2XX_STATE_RX_AACK_ON;
+				            }
 #endif
 #endif
 #if MODULE_OPENTHREAD_MTD
-				/* Wake up for a while when receiving an ACK with pending bit */
-				if (trac_status == AT86RF2XX_TRX_STATE__TRAC_SUCCESS_DATA_PENDING) {
-	                dev->idle_state = AT86RF2XX_STATE_RX_AACK_ON;		      
-				} else {
+            				/* Wake up for a while when receiving an ACK with pending bit */
+				            if (trac_status == AT86RF2XX_TRX_STATE__TRAC_SUCCESS_DATA_PENDING) {
+	                   dev->idle_state = AT86RF2XX_STATE_RX_AACK_ON;
+				            } else {
                     dev->idle_state = AT86RF2XX_STATE_SLEEP;
                 }
 #endif
