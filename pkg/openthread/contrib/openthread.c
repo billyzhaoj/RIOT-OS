@@ -61,7 +61,6 @@ static mutex_t tasklet_mutex = MUTEX_INIT;
 
 static char ot_main_thread_stack[THREAD_STACKSIZE_MAIN];
 static char ot_task_thread_stack[THREAD_STACKSIZE_MAIN];
-static char ot_event_thread_stack[THREAD_STACKSIZE_IDLE];
 
 void print_active_pid(void) {
     unsigned int pid = sched_active_pid;
@@ -167,7 +166,7 @@ static void _linkretry_timer_cb(void* arg) {
 /* Interupt handler for OpenThread milli-timer event */
 static void _millitimer_cb(void* arg) {
     millitimer_msg.type = OPENTHREAD_MILLITIMER_MSG_TYPE_EVENT;
-	  if (msg_send(&millitimer_msg, openthread_get_event_pid()) <= 0) {
+	  if (msg_send(&millitimer_msg, openthread_get_main_pid()) <= 0) {
         while (1) {
             printf("ot_event: possibly lost timer interrupt.\n");
         }
@@ -285,8 +284,6 @@ void openthread_bootstrap(void)
     DEBUG("OT-UART setting is OK\n");
 
     /* init three threads for openthread */
-    openthread_event_init(ot_event_thread_stack, sizeof(ot_event_thread_stack),
-                         THREAD_PRIORITY_MAIN - 3, "openthread_event");
     openthread_task_init(ot_task_thread_stack, sizeof(ot_task_thread_stack),
                         THREAD_PRIORITY_MAIN - 1, "openthread_task");
     openthread_main_init(ot_main_thread_stack, sizeof(ot_main_thread_stack),
