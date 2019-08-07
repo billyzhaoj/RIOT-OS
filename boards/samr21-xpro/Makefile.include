@@ -13,8 +13,11 @@ ifeq ($(PROGRAMMER),edbg)
 
   include $(RIOTMAKE)/boards/sam0.inc.mk
 else ifeq ($(PROGRAMMER),jlink)
+  export JLINK_DEVICE ?= atsamr21e18a
+
   export DEBUGGER = $(RIOTBOARD)/$(BOARD)/dist/debug.sh
   export DEBUGSERVER = JLinkGDBServer -device atsamr21e18a -if swd
+  
   export RESET = $(RIOTBOARD)/$(BOARD)/dist/reset.sh
 
   export FLASHER = $(RIOTBOARD)/$(BOARD)/dist/flash.sh
@@ -25,8 +28,9 @@ else ifeq ($(PROGRAMMER),jlink)
   export DEBUGGER_FLAGS = $(BINDIR) $(ELFFILE)
   export RESET_FLAGS = $(BINDIR)
 
+  #USEMODULE += rtt_stdio
   ifneq (,$(filter rtt_stdio,$(USEMODULE)))
-    export TERMPROG = JLinkRTTClient
+    export TERMPROG = JLinkRTTLogger -device atsamr21e18a -if swd -speed 2000 -RTTChannel 0
   endif
 
   export OBJDUMPFLAGS += --disassemble --source --disassembler-options=force-thumb
