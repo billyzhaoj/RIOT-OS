@@ -95,27 +95,27 @@ static void *_openthread_main_thread(void *arg) {
     otLinkSetPanId(sInstance, panid);
     otLinkSetChannel(sInstance, channel);
 
-#if defined(MODULE_OPENTHREAD_CLI_FTD) || defined(MODULE_OPENTHREAD_CLI_MTD)
-    otCliUartInit(sInstance);
-    DEBUG("OT-UART initialization is OK\n");
-    /* Bring up the IPv6 interface  */
-    otIp6SetEnabled(sInstance, true);
-    DEBUG("OT-IPv6 setting is OK\n");
-    /* Start Thread operation */
-    otThreadSetEnabled(sInstance, true);
-    DEBUG("OT-FTD/MTD initialization is OK\n");
-#endif
+/* #if defined(MODULE_OPENTHREAD_CLI_FTD) || defined(MODULE_OPENTHREAD_CLI_MTD) */
+/*     otCliUartInit(sInstance); */
+/*     DEBUG("OT-UART initialization is OK\n"); */
+/*     /1* Bring up the IPv6 interface  *1/ */
+/*     otIp6SetEnabled(sInstance, true); */
+/*     DEBUG("OT-IPv6 setting is OK\n"); */
+/*     /1* Start Thread operation *1/ */
+/*     otThreadSetEnabled(sInstance, true); */
+/*     DEBUG("OT-FTD/MTD initialization is OK\n"); */
+/* #endif */
 
-#ifdef MODULE_OPENTHREAD_NCP_FTD
-    otNcpInit(sInstance);
-    DEBUG("OT-NCP initialization is OK\n");
-    otCommissionerStart(sInstance);
-    DEBUG("OT-Commisioner initialization is OK\n");
-#endif
+/* #ifdef MODULE_OPENTHREAD_NCP_FTD */
+/*     otNcpInit(sInstance); */
+/*     DEBUG("OT-NCP initialization is OK\n"); */
+/*     otCommissionerStart(sInstance); */
+/*     DEBUG("OT-Commisioner initialization is OK\n"); */
+/* #endif */
 
-#if OPENTHREAD_ENABLE_DIAG
-    diagInit(sInstance);
-#endif
+/* #if OPENTHREAD_ENABLE_DIAG */
+/*     diagInit(sInstance); */
+/* #endif */
 
     while (1) {
         msg_receive(&msg);

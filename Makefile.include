@@ -223,7 +223,7 @@ include $(RIOTMAKE)/toolchain/$(TOOLCHAIN).inc.mk
 GNRC_NETIF_NUMOF ?= 1
 
 ifneq ($(GNRC_NETIF_NUMOF),1)
-  CFLAGS += -DGNRC_NETIF_NUMOF=$(GNRC_NETIF_NUMOF)
+  CFLAGS += -DGNRC_NETIF_NUMOF=$(GNRC_NETIF_NUMOF) -O0
 endif
 
 # process provided features

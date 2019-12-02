@@ -138,7 +138,9 @@ void at86rf2xx_set_addr_long(at86rf2xx_t *dev, uint64_t addr)
 
 uint8_t at86rf2xx_get_chan(at86rf2xx_t *dev)
 {
-    return dev->netdev.chan;
+    uint8_t phy_cc_cca = at86rf2xx_reg_read(dev, AT86RF2XX_REG__PHY_CC_CCA);
+    return (uint8_t) (phy_cc_cca & AT86RF2XX_PHY_CC_CCA_MASK__CHANNEL);
+    //return dev->netdev.chan;
 }
 
 void at86rf2xx_set_chan(at86rf2xx_t *dev, uint8_t channel)
@@ -335,13 +337,20 @@ void at86rf2xx_set_cca_threshold(at86rf2xx_t *dev, int8_t value)
 
 int8_t at86rf2xx_get_ed_level(at86rf2xx_t *dev)
 {
-    uint8_t tmp = at86rf2xx_reg_read(dev, AT86RF2XX_REG__PHY_ED_LEVEL);
+    at86rf2xx_set_option(dev, AT86RF2XX_OPT_TELL_CCA_ED_DONE, true);
+    at86rf2xx_reg_write(dev, AT86RF2XX_REG__PHY_ED_LEVEL, 1);
+    //for(volatile int i = 0; i < 5000;i++);
+    volatile uint8_t tmp = at86rf2xx_reg_read(dev, AT86RF2XX_REG__PHY_ED_LEVEL);
+    if (tmp == 255)
+        return tmp;
 #if MODULE_AT86RF212B
     /* AT86RF212B has different scale than the other variants */
-    int8_t ed = (int8_t)(((int16_t)tmp * 103) / 100) + RSSI_BASE_VAL;
+    volatile int8_t ed = (int8_t)(((int16_t)tmp * 103) / 100) + RSSI_BASE_VAL;
 #else
-    int8_t ed = (int8_t)tmp + RSSI_BASE_VAL;
+    volatile int8_t ed = (int8_t)tmp + RSSI_BASE_VAL;
 #endif
+
+    at86rf2xx_set_option(dev, AT86RF2XX_OPT_TELL_RX_START, false);
     return ed;
 }
 

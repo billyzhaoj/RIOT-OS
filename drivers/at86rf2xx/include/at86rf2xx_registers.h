@@ -120,6 +120,7 @@ extern "C" {
 #define AT86RF2XX_REG__CSMA_SEED_0                              (0x2D)
 #define AT86RF2XX_REG__CSMA_SEED_1                              (0x2E)
 #define AT86RF2XX_REG__CSMA_BE                                  (0x2F)
+#define AT86RF2XX_REG__PHY_PMU_VALUE                            (0x3B)
 #define AT86RF2XX_REG__TST_CTRL_DIGI                            (0x36)
 /** @} */
 
@@ -131,6 +132,7 @@ extern "C" {
 #define AT86RF2XX_TRX_CTRL_0_MASK__PAD_IO_CLKM                  (0x30)
 #define AT86RF2XX_TRX_CTRL_0_MASK__CLKM_SHA_SEL                 (0x08)
 #define AT86RF2XX_TRX_CTRL_0_MASK__CLKM_CTRL                    (0x07)
+#define AT86RF2XX_TRX_CTRL_0_MASK__PMU_EN                       (0x10)
 
 #define AT86RF2XX_TRX_CTRL_0_DEFAULT__PAD_IO                    (0x00)
 #define AT86RF2XX_TRX_CTRL_0_DEFAULT__PAD_IO_CLKM               (0x10)

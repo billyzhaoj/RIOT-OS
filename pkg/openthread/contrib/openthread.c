@@ -22,6 +22,7 @@
 
 #include "openthread/platform/uart.h"
 #include "ot.h"
+#include "ot_hooks.h"
 #include "random.h"
 #include "xtimer.h"
 #include "irq.h"

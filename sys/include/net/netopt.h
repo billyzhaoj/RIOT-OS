@@ -459,6 +459,9 @@ typedef enum {
      * @note    Interfaces are not meant to respond to that.
      */
     NETOPT_NUMOF,
+
+    NETOPT_ED,
+    NETOPT_PHASE,
 } netopt_t;
 
 /**

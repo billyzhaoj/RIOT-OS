@@ -88,8 +88,10 @@ void _xtimer_periodic_wakeup(uint32_t *last_wakeup, uint32_t period) {
 
     if (elapsed >= period) {
         /* timer should be fired right now */
+        *last_wakeup = now;
+        return;
     }
-    else if (offset < XTIMER_PERIODIC_SPIN) {
+    if (offset < XTIMER_PERIODIC_SPIN) {
         _xtimer_spin(offset);
     }
     else {

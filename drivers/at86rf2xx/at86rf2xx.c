@@ -114,6 +114,8 @@ void at86rf2xx_reset(at86rf2xx_t *dev)
     tmp &= ~(AT86RF2XX_TRX_CTRL_0_MASK__CLKM_CTRL);
     tmp &= ~(AT86RF2XX_TRX_CTRL_0_MASK__CLKM_SHA_SEL);
     tmp |= (AT86RF2XX_TRX_CTRL_0_CLKM_CTRL__OFF);
+    // ENABLE PMU FOR PHASE
+    tmp |= (AT86RF2XX_TRX_CTRL_0_MASK__PMU_EN);
     at86rf2xx_reg_write(dev, AT86RF2XX_REG__TRX_CTRL_0, tmp);
 
     at86rf2xx_set_option(dev, AT86RF2XX_OPT_CSMA, true);
@@ -303,8 +305,10 @@ bool at86rf2xx_cca(at86rf2xx_t *dev)
     } while ((reg & AT86RF2XX_TRX_STATUS_MASK__CCA_DONE) == 0);
     /* return true if channel is clear */
     bool ret = !!(reg & AT86RF2XX_TRX_STATUS_MASK__CCA_STATUS);
-    /* re-enable RX */
-    at86rf2xx_reg_write(dev, AT86RF2XX_REG__RX_SYN, rx_syn);
+    
+    // DON'T ENABLE RX SYN to allow for manual ED polling.
+    /* /1* re-enable RX *1/ */
+    /* at86rf2xx_reg_write(dev, AT86RF2XX_REG__RX_SYN, rx_syn); */
     /* Step back to the old state */
     at86rf2xx_set_state(dev, AT86RF2XX_STATE_TRX_OFF);
     at86rf2xx_set_state(dev, old_state);

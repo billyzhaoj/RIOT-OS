@@ -315,6 +315,15 @@ static int _get(netdev_t *netdev, netopt_t opt, void *val, size_t max_len)
             *((netopt_enable_t *)val) =
                 !!(dev->netdev.flags & AT86RF2XX_OPT_CSMA);
             return sizeof(netopt_enable_t);
+        
+        case NETOPT_ED:
+            //return at86rf2xx_reg_read(dev, AT86RF2XX_REG__PHY_ED_LEVEL);
+            return at86rf2xx_get_ed_level(dev);
+        case NETOPT_CHANNEL:
+            return at86rf2xx_get_chan(dev);
+        case NETOPT_PHASE:
+
+            return at86rf2xx_reg_read(dev,AT86RF2XX_REG__PHY_PMU_VALUE);
 
 /* Only radios with the XAH_CTRL_2 register support frame retry reporting */
 #if AT86RF2XX_HAVE_RETRIES
@@ -429,14 +438,14 @@ static int _set(netdev_t *netdev, netopt_t opt, const void *val, size_t len)
             /* don't set res to set netdev_ieee802154_t::pan */
             break;
         case NETOPT_CHANNEL:
-            assert(len != sizeof(uint8_t));
-            uint8_t chan = ((const uint8_t *)val)[0];
-            if (chan < AT86RF2XX_MIN_CHANNEL ||
-                chan > AT86RF2XX_MAX_CHANNEL) {
-                res = -EINVAL;
-                break;
-            }
-            at86rf2xx_set_chan(dev, chan);
+            /* assert(len != sizeof(uint8_t)); */
+            /* uint8_t chan = ((const uint8_t *)val)[0]; */
+            /* if (chan < AT86RF2XX_MIN_CHANNEL || */
+            /*     chan > AT86RF2XX_MAX_CHANNEL) { */
+            /*     res = -EINVAL; */
+            /*     break; */
+            /* } */
+            at86rf2xx_set_chan(dev, ((const uint8_t *)val)[0]);
             /* don't set res to set netdev_ieee802154_t::chan */
             break;
 
