@@ -30,7 +30,7 @@ else ifeq ($(PROGRAMMER),jlink)
 
   #USEMODULE += rtt_stdio
   ifneq (,$(filter rtt_stdio,$(USEMODULE)))
-    export TERMPROG = JLinkRTTLogger -device atsamr21e18a -if swd -speed 2000 -RTTChannel 0
+    export TERMPROG = JLinkRTTLogger -device atsamr21e18a -if swd -speed 2000 -RTTChannel 0 test
   endif
 
   export OBJDUMPFLAGS += --disassemble --source --disassembler-options=force-thumb
